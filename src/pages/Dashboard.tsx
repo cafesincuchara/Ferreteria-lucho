@@ -106,7 +106,10 @@ const Dashboard = () => {
       const topProducts = Object.entries(productSales)
         .map(([id, qty]) => {
           const prod = products?.find((p) => String(p.id) === String(id));
-          return prod ? { name: prod.name, qty: Number(qty) } : null;
+          const cantidad = Number(qty);
+          return prod && !isNaN(cantidad) && cantidad > 0
+            ? { name: prod.name, qty: cantidad }
+            : null;
         })
         .filter(Boolean)
         .sort((a, b) => b.qty - a.qty)
@@ -410,16 +413,45 @@ const Dashboard = () => {
                       No hay datos de productos vendidos.
                     </div>
                   ) : (
-                    <VictoryBar
-                      data={stats.topProducts.map((p) => ({
-                        x: p.name,
-                        y: p.qty,
-                      }))}
-                      style={{ data: { fill: "#f59e42" } }}
-                      labels={({ datum }) => datum.y}
-                      labelComponent={<VictoryTooltip />}
-                      height={300}
-                    />
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <VictoryBar
+                        data={stats.topProducts.map((p) => ({
+                          x: p.name,
+                          y: p.qty,
+                        }))}
+                        style={{ data: { fill: "#f59e42" } }}
+                        labels={({ datum }) => datum.y}
+                        labelComponent={<VictoryTooltip />}
+                        height={220}
+                      />
+                      <div className="w-full text-center mt-2 mb-1 text-sm text-muted-foreground font-semibold">
+                        Leyenda:
+                      </div>
+                      <div
+                        className="flex flex-row justify-between items-end w-full mb-6"
+                        style={{ gap: "0.5rem" }}
+                      >
+                        {stats.topProducts.map((prod, idx) => (
+                          <span
+                            key={prod.name}
+                            className="flex flex-col items-center flex-1"
+                          >
+                            <span
+                              className="px-2 py-1 rounded text-sm font-medium"
+                              style={{
+                                background: "#f59e42",
+                                color: "#fff",
+                                width: "100%",
+                                textAlign: "center",
+                                maxWidth: "120px",
+                              }}
+                            >
+                              {prod.name}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </CardContent>
               </Card>
