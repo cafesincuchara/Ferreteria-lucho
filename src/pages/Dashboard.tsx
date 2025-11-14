@@ -205,37 +205,80 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle>Ventas Últimos 7 Días</CardTitle>
             </CardHeader>
-            <CardContent style={{ height: 300 }}>
+            <CardContent style={{ height: 320 }}>
               <ResponsiveBar
                 data={salesData.map((d) => ({ ...d, ventas: d.ventas || 0 }))}
                 keys={["ventas"]}
                 indexBy="date"
-                margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
-                padding={0.4}
-                colors={{ scheme: "nivo" }}
+                margin={{ top: 40, right: 40, bottom: 60, left: 70 }}
+                padding={0.3}
+                colors={["#2563eb"]}
+                borderRadius={6}
                 axisBottom={{
                   tickSize: 5,
-                  tickPadding: 5,
-                  tickRotation: 30,
+                  tickPadding: 10,
+                  tickRotation: 0,
                   legend: "Día",
                   legendPosition: "middle",
-                  legendOffset: 40,
+                  legendOffset: 50,
                 }}
                 axisLeft={{
                   tickSize: 5,
-                  tickPadding: 5,
+                  tickPadding: 10,
                   tickRotation: 0,
                   legend: "Ventas",
                   legendPosition: "middle",
-                  legendOffset: -50,
+                  legendOffset: -60,
                 }}
+                enableLabel={true}
+                labelSkipWidth={16}
+                labelSkipHeight={16}
+                labelTextColor="#fff"
                 animate={true}
-                enableLabel={false}
+                motionConfig="wobbly"
                 tooltip={({ id, value, indexValue }) => (
-                  <strong>
-                    {indexValue}: {value} ventas
-                  </strong>
+                  <div style={{ padding: 8 }}>
+                    <strong>{indexValue}</strong>
+                    <br />
+                    <span style={{ color: "#2563eb" }}>{value} ventas</span>
+                  </div>
                 )}
+                theme={{
+                  axis: {
+                    ticks: {
+                      text: { fontSize: 14, fill: "#334155" },
+                    },
+                    legend: {
+                      text: {
+                        fontSize: 16,
+                        fontWeight: "bold",
+                        fill: "#1e293b",
+                      },
+                    },
+                  },
+                  labels: {
+                    text: { fontSize: 13, fontWeight: "bold" },
+                  },
+                }}
+                legends={[
+                  {
+                    dataFrom: "keys",
+                    anchor: "top-right",
+                    direction: "row",
+                    justify: false,
+                    translateX: 0,
+                    translateY: -30,
+                    itemsSpacing: 2,
+                    itemWidth: 80,
+                    itemHeight: 20,
+                    itemDirection: "left-to-right",
+                    symbolSize: 16,
+                    symbolShape: "circle",
+                    effects: [
+                      { on: "hover", style: { itemTextColor: "#2563eb" } },
+                    ],
+                  },
+                ]}
               />
             </CardContent>
           </Card>
@@ -244,7 +287,7 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle>Estado del Inventario</CardTitle>
             </CardHeader>
-            <CardContent style={{ height: 300 }}>
+            <CardContent style={{ height: 320 }}>
               <ResponsivePie
                 data={stockData.map((d) => ({
                   id: d.name,
@@ -252,23 +295,64 @@ const Dashboard = () => {
                   value: d.value,
                   color: d.color,
                 }))}
-                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                innerRadius={0.5}
-                padAngle={1}
+                margin={{ top: 40, right: 40, bottom: 40, left: 40 }}
+                innerRadius={0.6}
+                padAngle={2}
+                cornerRadius={8}
                 colors={{ datum: "data.color" }}
-                borderWidth={2}
-                borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
-                enableArcLabels={false}
-                enableArcLinkLabels={true}
+                borderWidth={3}
+                borderColor={{ from: "color", modifiers: [["darker", 0.3]] }}
+                enableArcLabels={true}
+                arcLabelsRadiusOffset={0.7}
+                arcLabelsSkipAngle={10}
+                arcLabelsTextColor="#334155"
                 arcLinkLabelsSkipAngle={10}
-                arcLinkLabelsTextColor="#333"
+                arcLinkLabelsTextColor="#334155"
                 arcLinkLabelsThickness={2}
                 arcLinkLabelsColor={{ from: "color" }}
+                animate={true}
+                motionConfig="wobbly"
                 tooltip={({ datum }) => (
-                  <strong>
-                    {datum.label}: {datum.value}
-                  </strong>
+                  <div style={{ padding: 8 }}>
+                    <strong>{datum.label}</strong>
+                    <br />
+                    <span style={{ color: datum.color }}>
+                      {datum.value} unidades
+                    </span>
+                    <br />
+                    <span style={{ fontSize: 12, color: "#64748b" }}>
+                      {(
+                        (datum.value /
+                          stockData.reduce((a, b) => a + b.value, 0)) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </span>
+                  </div>
                 )}
+                theme={{
+                  labels: {
+                    text: { fontSize: 14, fontWeight: "bold" },
+                  },
+                }}
+                legends={[
+                  {
+                    anchor: "bottom",
+                    direction: "row",
+                    justify: false,
+                    translateX: 0,
+                    translateY: 30,
+                    itemsSpacing: 2,
+                    itemWidth: 120,
+                    itemHeight: 20,
+                    itemDirection: "left-to-right",
+                    symbolSize: 18,
+                    symbolShape: "circle",
+                    effects: [
+                      { on: "hover", style: { itemTextColor: "#2563eb" } },
+                    ],
+                  },
+                ]}
               />
             </CardContent>
           </Card>
@@ -277,20 +361,24 @@ const Dashboard = () => {
         {(userRole === "contador" || userRole === "gerente") && (
           <Card>
             <CardHeader>
-              <CardTitle>Ingresos Mensuales</CardTitle>
+              <CardTitle className="text-xl font-bold mb-2">
+                Ingresos Mensuales
+              </CardTitle>
             </CardHeader>
-            <CardContent style={{ height: 300 }}>
+            <CardContent
+              style={{ height: 340, padding: "24px 12px 12px 12px" }}
+            >
               <ResponsiveLine
                 data={[
                   {
                     id: "Ingresos",
                     data: salesData.map((d) => ({
                       x: d.date,
-                      y: d.monto ?? 0,
+                      y: d.monto ? d.monto : 0,
                     })),
                   },
                 ]}
-                margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
+                margin={{ top: 50, right: 50, bottom: 70, left: 80 }}
                 xScale={{ type: "point" }}
                 yScale={{
                   type: "linear",
@@ -300,37 +388,81 @@ const Dashboard = () => {
                   reverse: false,
                 }}
                 axisBottom={{
-                  tickSize: 5,
-                  tickPadding: 5,
-                  tickRotation: 30,
+                  tickSize: 6,
+                  tickPadding: 14,
+                  tickRotation: 0,
                   legend: "Día",
                   legendPosition: "middle",
-                  legendOffset: 40,
+                  legendOffset: 56,
                 }}
                 axisLeft={{
-                  tickSize: 5,
-                  tickPadding: 10,
+                  tickSize: 6,
+                  tickPadding: 14,
                   tickRotation: 0,
                   legend: "Monto",
                   legendPosition: "middle",
-                  legendOffset: -60, // Más espacio para separar el texto del eje
+                  legendOffset: -90, // Más espacio para separar el texto del eje
                 }}
-                colors={{ scheme: "nivo" }}
-                pointSize={10}
+                colors={["#059669"]}
+                pointSize={14}
                 pointColor={{ theme: "background" }}
-                pointBorderWidth={2}
+                pointBorderWidth={4}
                 pointBorderColor={{ from: "serieColor" }}
                 enableArea={true}
-                areaOpacity={0.2}
-                animate={true}
-                useMesh={true}
+                areaOpacity={0.18}
+                curve="monotoneX"
                 enableSlices="x"
                 enableCrosshair={true}
+                animate={true}
+                motionConfig="wobbly"
                 tooltip={({ point }) => (
-                  <strong>
-                    {point.data.x}: ${point.data.y}
-                  </strong>
+                  <div style={{ padding: 10, fontSize: 15 }}>
+                    <strong>{point.data.x}</strong>
+                    <br />
+                    <span style={{ color: "#059669", fontWeight: "bold" }}>
+                      ${point.data.y}
+                    </span>
+                  </div>
                 )}
+                theme={{
+                  axis: {
+                    ticks: {
+                      text: {
+                        fontSize: 16,
+                        fill: "#334155",
+                        fontWeight: "bold",
+                      },
+                    },
+                    legend: {
+                      text: {
+                        fontSize: 18,
+                        fontWeight: "bold",
+                        fill: "#1e293b",
+                      },
+                    },
+                  },
+                  labels: {
+                    text: { fontSize: 15, fontWeight: "bold" },
+                  },
+                }}
+                legends={[
+                  {
+                    anchor: "top-left",
+                    direction: "row",
+                    justify: false,
+                    translateX: 0,
+                    translateY: -36,
+                    itemsSpacing: 2,
+                    itemWidth: 110,
+                    itemHeight: 24,
+                    itemDirection: "left-to-right",
+                    symbolSize: 18,
+                    symbolShape: "circle",
+                    effects: [
+                      { on: "hover", style: { itemTextColor: "#059669" } },
+                    ],
+                  },
+                ]}
               />
             </CardContent>
           </Card>
