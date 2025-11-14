@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import ErrorScreen from "@/components/ErrorScreen";
+import NoConnectionScreen from "@/components/NoConnectionScreen";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +38,7 @@ const Dashboard = () => {
   >([]);
 
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,12 +48,22 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      setConnectionError(false);
       // 🔹 1. Productos
       const { data: products, error: prodError } = await supabase
         .from("products")
         .select("*");
 
-      if (prodError) throw prodError;
+      if (prodError) {
+        if (
+          prodError.message?.includes("Failed to fetch") ||
+          prodError.code === "ECONNREFUSED"
+        ) {
+          setConnectionError(true);
+          throw prodError;
+        }
+        throw prodError;
+      }
 
       const lowStock = products?.filter((p) => p.stock <= p.min_stock) || [];
 
@@ -59,7 +72,16 @@ const Dashboard = () => {
         .from("sales")
         .select("*");
 
-      if (salesError) throw salesError;
+      if (salesError) {
+        if (
+          salesError.message?.includes("Failed to fetch") ||
+          salesError.code === "ECONNREFUSED"
+        ) {
+          setConnectionError(true);
+          throw salesError;
+        }
+        throw salesError;
+      }
 
       const thisMonth = new Date();
       thisMonth.setDate(1);
@@ -79,7 +101,16 @@ const Dashboard = () => {
           .from("profiles")
           .select("*", { count: "exact", head: true });
 
-        if (userError) throw userError;
+        if (userError) {
+          if (
+            userError.message?.includes("Failed to fetch") ||
+            userError.code === "ECONNREFUSED"
+          ) {
+            setConnectionError(true);
+            throw userError;
+          }
+          throw userError;
+        }
         userCount = count || 0;
       }
 
@@ -136,6 +167,7 @@ const Dashboard = () => {
 
       setStockData(stockCategories);
     } catch (error: any) {
+      if (connectionError) return;
       setAlertMsg("Error cargando datos del dashboard");
       console.error(error);
     } finally {
@@ -146,14 +178,11 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {alertMsg && (
-          <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-900 border border-yellow-300">
-            {alertMsg}
-            <button className="float-right" onClick={() => setAlertMsg(null)}>
-              &times;
-            </button>
-          </div>
-        )}
+        {connectionError ? (
+          <NoConnectionScreen />
+        ) : alertMsg ? (
+          <ErrorScreen message={alertMsg} onRetry={loadDashboardData} />
+        ) : null}
 
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
