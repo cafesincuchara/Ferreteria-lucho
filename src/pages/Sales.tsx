@@ -353,7 +353,9 @@ const Sales = () => {
                   <TableHead>Documento</TableHead>
                   <TableHead>Productos</TableHead>
                   <TableHead>Total</TableHead>
-                  {userRole === "gerente" && <TableHead>Usuario</TableHead>}
+                  {(userRole === "gerente" || userRole === "contador") && (
+                    <TableHead>Usuario</TableHead>
+                  )}
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -391,7 +393,7 @@ const Sales = () => {
                     <TableCell>
                       ${Number(sale.total).toLocaleString("es-CL")}
                     </TableCell>
-                    {userRole === "gerente" && (
+                    {(userRole === "gerente" || userRole === "contador") && (
                       <TableCell>{sale.user_id}</TableCell>
                     )}
                     <TableCell>

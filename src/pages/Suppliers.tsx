@@ -168,6 +168,9 @@ const Suppliers = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Teléfono</TableHead>
                   <TableHead>Dirección</TableHead>
+                  {userRole === "bodeguero" && (
+                    <TableHead>Productos Suministrados</TableHead>
+                  )}
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -178,6 +181,14 @@ const Suppliers = () => {
                     <TableCell>{s.email || "-"}</TableCell>
                     <TableCell>{s.phone || "-"}</TableCell>
                     <TableCell>{s.address || "-"}</TableCell>
+                    {userRole === "bodeguero" && (
+                      <TableCell>
+                        {/* Aquí podrías mostrar los productos suministrados si tienes esa relación */}
+                        {s.products_supplied
+                          ? s.products_supplied.join(", ")
+                          : "-"}
+                      </TableCell>
+                    )}
                     <TableCell className="text-right space-x-2">
                       <Button
                         variant="ghost"

@@ -221,6 +221,7 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
+              {/* Usuarios activos solo para gerente */}
               {userRole === "gerente" && (
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -231,6 +232,45 @@ const Dashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Ventas y resumen para cajero y contador */}
+              {(userRole === "cajero" || userRole === "contador") && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Ventas Registradas
+                    </CardTitle>
+                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalSales}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total del mes: $
+                      {stats.monthlyRevenue.toLocaleString("es-CL")}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Inventario para bodeguero */}
+              {userRole === "bodeguero" && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Productos con Stock Crítico
+                    </CardTitle>
+                    <Package className="h-4 w-4 text-destructive" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {stats.lowStockProducts}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Revisa el inventario para reabastecer.
+                    </p>
                   </CardContent>
                 </Card>
               )}

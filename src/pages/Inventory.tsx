@@ -69,6 +69,10 @@ const Inventory = () => {
                   <TableHead>Stock</TableHead>
                   <TableHead>Stock Mínimo</TableHead>
                   <TableHead>Proveedor</TableHead>
+                  {userRole === "bodeguero" && (
+                    <TableHead>Descripción</TableHead>
+                  )}
+                  {userRole === "bodeguero" && <TableHead>Precio</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -89,6 +93,14 @@ const Inventory = () => {
                     </TableCell>
                     <TableCell>{product.min_stock}</TableCell>
                     <TableCell>{product.supplier_id || "-"}</TableCell>
+                    {userRole === "bodeguero" && (
+                      <TableCell>{product.description || "-"}</TableCell>
+                    )}
+                    {userRole === "bodeguero" && (
+                      <TableCell>
+                        ${product.price?.toLocaleString("es-CL") || "-"}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
