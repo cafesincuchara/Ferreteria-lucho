@@ -33,10 +33,16 @@ import { Badge } from "@/components/ui/badge";
 import { logAction } from "@/lib/logger";
 import { z } from "zod";
 
-const userSchema = z.object({
+const userCreateSchema = z.object({
   fullName: z.string().min(3, "Nombre debe tener al menos 3 caracteres"),
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Contraseña debe tener al menos 6 caracteres"),
+  role: z.enum(["gerente", "contador", "cajero", "bodeguero"]),
+});
+
+const userEditSchema = z.object({
+  fullName: z.string().min(3, "Nombre debe tener al menos 3 caracteres"),
+  email: z.string().email("Email inválido"),
   role: z.enum(["gerente", "contador", "cajero", "bodeguero"]),
 });
 
@@ -67,17 +73,26 @@ const Users = () => {
     e.preventDefault();
 
     try {
-      userSchema.parse(formData);
+      if (editingUser) {
+        userEditSchema.parse(formData);
+      } else {
+        userCreateSchema.parse(formData);
+      }
 
       if (editingUser) {
-        // Update user role
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .update({ role: formData.role })
-          .eq("user_id", editingUser.id);
-
-        if (roleError) throw roleError;
-
+        // Si el usuario no tiene rol, insertar; si tiene, actualizar
+        if (!editingUser.user_roles || editingUser.user_roles.length === 0) {
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .insert({ user_id: editingUser.id, role: formData.role });
+          if (roleError) throw roleError;
+        } else {
+          const { error: roleError } = await supabase
+            .from("user_roles")
+            .update({ role: formData.role })
+            .eq("user_id", editingUser.id);
+          if (roleError) throw roleError;
+        }
         await logAction("Actualizar usuario", "user", editingUser.id, formData);
         toast.success("Usuario actualizado");
       } else {
@@ -216,7 +231,7 @@ const Users = () => {
                     disabled={!!editingUser}
                   />
                 </div>
-                {!editingUser && (
+                {!editingUser ? (
                   <div>
                     <Label>Contraseña</Label>
                     <Input
@@ -234,7 +249,7 @@ const Users = () => {
                       required
                     />
                   </div>
-                )}
+                ) : null}
                 <div>
                   <Label>Rol</Label>
                   <Select
