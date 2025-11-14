@@ -23,3 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env.*
+*.env
+supabase/config.toml
+supabase/migrations/*.sql
+# Excluir archivos sensibles
+*.key
+*.pem
+*.crt
+*.p12
+*.db
+*.sqlite
+*.bak
+*.secret

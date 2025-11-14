@@ -27,7 +27,12 @@ const Dashboard = () => {
     totalSales: 0,
     monthlyRevenue: 0,
     totalUsers: 0,
+    totalRevenue: 0,
+    topProducts: [],
+    activeSuppliers: 0,
+    recentSales: [],
   });
+  const [suppliersList, setSuppliersList] = useState<any[]>([]);
 
   const [salesData, setSalesData] = useState<
     { date: string; ventas: number; monto: number }[]
@@ -71,6 +76,50 @@ const Dashboard = () => {
       const { data: sales, error: salesError } = await supabase
         .from("sales")
         .select("*");
+
+      // 🔹 4. Proveedores
+      const { data: suppliers, error: suppliersError } = await supabase
+        .from("suppliers")
+        .select("*");
+      const activeSuppliers = suppliers?.length || 0;
+      setSuppliersList(suppliers || []);
+
+      // 🔹 Productos más vendidos
+      const productSales = {};
+      sales?.forEach((sale) => {
+        let items = sale.items;
+        if (typeof items === "string") {
+          try {
+            items = JSON.parse(items);
+          } catch {
+            items = [];
+          }
+        }
+        if (Array.isArray(items)) {
+          items.forEach((item) => {
+            if (!productSales[item.product_id])
+              productSales[item.product_id] = 0;
+            productSales[item.product_id] += item.quantity;
+          });
+        }
+      });
+      const topProducts = Object.entries(productSales)
+        .map(([id, qty]) => {
+          const prod = products?.find((p) => String(p.id) === String(id));
+          return prod ? { name: prod.name, qty: Number(qty) } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, 5);
+
+      // 🔹 Ingresos totales históricos
+      const totalRevenue = sales?.reduce(
+        (sum, s) => sum + Number(s.total || 0),
+        0
+      );
+
+      // 🔹 Ventas recientes
+      const recentSales = sales?.slice(-5).reverse() || [];
 
       if (salesError) {
         if (
@@ -120,6 +169,10 @@ const Dashboard = () => {
         totalSales: sales?.length || 0,
         monthlyRevenue,
         totalUsers: userCount,
+        totalRevenue,
+        topProducts,
+        activeSuppliers,
+        recentSales,
       });
 
       // 🔹 Últimos 7 días — gráfico
@@ -202,6 +255,74 @@ const Dashboard = () => {
           <>
             {/* 🔹 Tarjetas de estadísticas */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {/* Ingresos totales históricos */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Ingresos Totales
+                  </CardTitle>
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    ${stats.totalRevenue.toLocaleString("es-CL")}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Proveedores activos */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Proveedores Activos
+                  </CardTitle>
+                  <Package className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {stats.activeSuppliers}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Productos más vendidos */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Top Productos Vendidos
+                  </CardTitle>
+                  <ShoppingCart className="h-4 w-4 text-orange-600" />
+                </CardHeader>
+                <CardContent>
+                  <ul className="text-sm mt-2">
+                    {stats.topProducts.map((p, idx) => (
+                      <li key={idx}>
+                        {p.name}: {p.qty} vendidos
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Ventas recientes */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Ventas Recientes
+                  </CardTitle>
+                  <ShoppingCart className="h-4 w-4 text-purple-600" />
+                </CardHeader>
+                <CardContent>
+                  <ul className="text-sm mt-2">
+                    {stats.recentSales.map((s, idx) => (
+                      <li key={idx}>
+                        {new Date(s.created_at).toLocaleString("es-CL")} - $
+                        {Number(s.total).toLocaleString("es-CL")}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">
@@ -278,6 +399,60 @@ const Dashboard = () => {
 
             {/* 🔹 Gráficos */}
             <div className="grid gap-6 md:grid-cols-2">
+              {/* Gráfico de productos más vendidos */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ranking Productos Vendidos</CardTitle>
+                </CardHeader>
+                <CardContent style={{ height: 320 }}>
+                  {stats.topProducts.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-12">
+                      No hay datos de productos vendidos.
+                    </div>
+                  ) : (
+                    <VictoryBar
+                      data={stats.topProducts.map((p) => ({
+                        x: p.name,
+                        y: p.qty,
+                      }))}
+                      style={{ data: { fill: "#f59e42" } }}
+                      labels={({ datum }) => datum.y}
+                      labelComponent={<VictoryTooltip />}
+                      height={300}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Gráfico de proveedores activos */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Proveedores Activos</CardTitle>
+                </CardHeader>
+                <CardContent style={{ height: 320 }}>
+                  {suppliersList.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-12">
+                      No hay datos de proveedores.
+                    </div>
+                  ) : (
+                    <VictoryPie
+                      data={suppliersList.map((s) => ({ x: s.name, y: 1 }))}
+                      colorScale={[
+                        "#3b82f6",
+                        "#6366f1",
+                        "#a21caf",
+                        "#f59e42",
+                        "#059669",
+                      ]}
+                      innerRadius={80}
+                      labels={({ datum }) => datum.x}
+                      labelComponent={<VictoryTooltip />}
+                      padAngle={2}
+                      style={{ parent: { margin: "0 auto" } }}
+                    />
+                  )}
+                </CardContent>
+              </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>Ventas Últimos 7 Días</CardTitle>
