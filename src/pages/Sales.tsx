@@ -44,6 +44,11 @@ const Sales = () => {
     items: [{ product_id: "", quantity: 1 }],
   });
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  // Filtros avanzados
+  const [filterCliente, setFilterCliente] = useState("");
+  const [filterProducto, setFilterProducto] = useState("");
+  const [filterDesde, setFilterDesde] = useState("");
+  const [filterHasta, setFilterHasta] = useState("");
 
   useEffect(() => {
     loadSales();
@@ -200,6 +205,36 @@ const Sales = () => {
     });
   };
 
+  // Filtro reactivo de ventas
+  const filteredSales = sales.filter((sale) => {
+    let match = true;
+    if (
+      filterCliente &&
+      !sale.customer_name?.toLowerCase().includes(filterCliente.toLowerCase())
+    )
+      match = false;
+    if (filterProducto) {
+      let items = sale.items;
+      if (typeof items === "string") {
+        try {
+          items = JSON.parse(items);
+        } catch {
+          items = [];
+        }
+      }
+      if (
+        !Array.isArray(items) ||
+        !items.some((item: any) => String(item.product_id) === filterProducto)
+      )
+        match = false;
+    }
+    if (filterDesde && new Date(sale.created_at) < new Date(filterDesde))
+      match = false;
+    if (filterHasta && new Date(sale.created_at) > new Date(filterHasta))
+      match = false;
+    return match;
+  });
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -212,6 +247,49 @@ const Sales = () => {
           </div>
         )}
         <h1 className="text-3xl font-bold">Ventas</h1>
+        {/* Filtros avanzados */}
+        <div className="mb-4 flex gap-2 flex-wrap items-end">
+          <Input
+            type="date"
+            value={filterDesde}
+            onChange={(e) => setFilterDesde(e.target.value)}
+            placeholder="Desde"
+          />
+          <Input
+            type="date"
+            value={filterHasta}
+            onChange={(e) => setFilterHasta(e.target.value)}
+            placeholder="Hasta"
+          />
+          <Input
+            value={filterCliente}
+            onChange={(e) => setFilterCliente(e.target.value)}
+            placeholder="Cliente"
+          />
+          <select
+            className="border rounded px-2 py-2"
+            value={filterProducto}
+            onChange={(e) => setFilterProducto(e.target.value)}
+          >
+            <option value="">Todos los productos</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setFilterCliente("");
+              setFilterProducto("");
+              setFilterDesde("");
+              setFilterHasta("");
+            }}
+          >
+            Limpiar filtros
+          </Button>
+        </div>
         <div className="flex justify-end mb-4">
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -360,7 +438,7 @@ const Sales = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sales.map((sale) => (
+                {filteredSales.map((sale) => (
                   <TableRow key={sale.id}>
                     <TableCell>{sale.created_at}</TableCell>
                     <TableCell>{sale.customer_name || "-"}</TableCell>

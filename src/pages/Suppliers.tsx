@@ -33,10 +33,19 @@ const Suppliers = () => {
     phone: "",
     address: "",
   });
+  const [products, setProducts] = useState<any[]>([]);
+  const [filterNombre, setFilterNombre] = useState("");
+  const [filterCategoria, setFilterCategoria] = useState("");
 
   useEffect(() => {
     loadSuppliers();
+    loadProducts();
   }, []);
+
+  const loadProducts = async () => {
+    const { data } = await supabase.from("products").select("*");
+    setProducts(data || []);
+  };
 
   const loadSuppliers = async () => {
     const { data } = await supabase.from("suppliers").select("*");
@@ -87,10 +96,56 @@ const Suppliers = () => {
     );
   }
 
+  // Filtro reactivo de proveedores
+  const filteredSuppliers = suppliers.filter((s) => {
+    let match = true;
+    if (
+      filterNombre &&
+      !s.name?.toLowerCase().includes(filterNombre.toLowerCase())
+    )
+      match = false;
+    if (filterCategoria) {
+      const productos = products.filter((p) => p.supplier_id === s.id);
+      if (!productos.some((p) => p.category === filterCategoria)) match = false;
+    }
+    return match;
+  });
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <h1 className="text-3xl font-bold">Proveedores</h1>
+        {/* Filtros avanzados */}
+        <div className="mb-4 flex gap-2 flex-wrap items-end">
+          <Input
+            value={filterNombre}
+            onChange={(e) => setFilterNombre(e.target.value)}
+            placeholder="Nombre"
+          />
+          <select
+            className="border rounded px-2 py-2"
+            value={filterCategoria}
+            onChange={(e) => setFilterCategoria(e.target.value)}
+          >
+            <option value="">Todas las categorías</option>
+            {Array.from(
+              new Set(products.map((p) => p.category).filter(Boolean))
+            ).map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setFilterNombre("");
+              setFilterCategoria("");
+            }}
+          >
+            Limpiar filtros
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Lista de Proveedores</CardTitle>
@@ -175,7 +230,7 @@ const Suppliers = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {suppliers.map((s) => (
+                {filteredSuppliers.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell>{s.name}</TableCell>
                     <TableCell>{s.email || "-"}</TableCell>
@@ -183,9 +238,12 @@ const Suppliers = () => {
                     <TableCell>{s.address || "-"}</TableCell>
                     {userRole === "bodeguero" && (
                       <TableCell>
-                        {/* Aquí podrías mostrar los productos suministrados si tienes esa relación */}
-                        {s.products_supplied
-                          ? s.products_supplied.join(", ")
+                        {products.filter((p) => p.supplier_id === s.id).length >
+                        0
+                          ? products
+                              .filter((p) => p.supplier_id === s.id)
+                              .map((p) => p.name)
+                              .join(", ")
                           : "-"}
                       </TableCell>
                     )}
