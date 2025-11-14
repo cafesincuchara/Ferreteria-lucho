@@ -76,72 +76,94 @@ const Sales = () => {
   // Registrar venta y descontar stock
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      // Validación básica
-      if (!formData.customer_name)
-        throw new Error("Nombre del cliente requerido");
-      if (formData.items.some((item) => !item.product_id || item.quantity < 1))
-        throw new Error("Producto y cantidad requeridos");
-      // Verifica stock suficiente
-      for (const item of formData.items) {
-        const prod = products.find((p) => p.id === item.product_id);
-        if (!prod || prod.stock < item.quantity)
-          throw new Error(`Stock insuficiente para ${prod?.name}`);
+    let intentos = 0;
+    const maxIntentos = 5;
+    let registrado = false;
+    let ultimoError = null;
+    while (!registrado && intentos < maxIntentos) {
+      try {
+        // Validación básica
+        if (!formData.customer_name)
+          throw new Error("Nombre del cliente requerido");
+        if (
+          formData.items.some((item) => !item.product_id || item.quantity < 1)
+        )
+          throw new Error("Producto y cantidad requeridos");
+        // Verifica stock suficiente
+        for (const item of formData.items) {
+          const prod = products.find((p) => p.id === item.product_id);
+          if (!prod || prod.stock < item.quantity)
+            throw new Error(`Stock insuficiente para ${prod?.name}`);
+        }
+        // Generar sale_number único
+        const today = new Date();
+        const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
+        const { data: lastSale } = await supabase
+          .from("sales")
+          .select("sale_number")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        let nextNum = 1;
+        if (
+          lastSale?.sale_number &&
+          lastSale.sale_number.startsWith(`V-${dateStr}-`)
+        ) {
+          const lastNum = parseInt(
+            lastSale.sale_number.split("-").pop() || "0"
+          );
+          nextNum = lastNum + intentos + 1;
+        } else {
+          nextNum = intentos + 1;
+        }
+        const sale_number = `V-${dateStr}-${String(nextNum).padStart(3, "0")}`;
+        // Inserta venta
+        const total = calculateTotal();
+        const { data: sale, error } = await supabase
+          .from("sales")
+          .insert([
+            {
+              customer_name: formData.customer_name,
+              document_type: formData.document_type.toLowerCase(),
+              total,
+              items: JSON.stringify(formData.items),
+              sale_number,
+              user_id: user?.id,
+            },
+          ])
+          .select()
+          .single();
+        if (error && error.code === "409") {
+          intentos++;
+          ultimoError = error;
+          continue;
+        }
+        if (error) throw error;
+        // Descuenta stock
+        for (const item of formData.items) {
+          const prod = products.find((p) => p.id === item.product_id);
+          await supabase
+            .from("products")
+            .update({ stock: prod.stock - item.quantity })
+            .eq("id", item.product_id);
+        }
+        setAlertMsg("Venta registrada correctamente");
+        setOpen(false);
+        setFormData({
+          customer_name: "",
+          document_type: "Boleta",
+          items: [{ product_id: "", quantity: 1 }],
+        });
+        loadSales();
+        loadProducts();
+        registrado = true;
+      } catch (err: any) {
+        ultimoError = err;
+        break;
       }
-      // Generar sale_number único
-      const today = new Date();
-      const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
-      const { data: lastSale } = await supabase
-        .from("sales")
-        .select("sale_number")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-      let nextNum = 1;
-      if (
-        lastSale?.sale_number &&
-        lastSale.sale_number.startsWith(`V-${dateStr}-`)
-      ) {
-        const lastNum = parseInt(lastSale.sale_number.split("-").pop() || "0");
-        nextNum = lastNum + 1;
-      }
-      const sale_number = `V-${dateStr}-${String(nextNum).padStart(3, "0")}`;
-      // Inserta venta
-      const total = calculateTotal();
-      const { data: sale, error } = await supabase
-        .from("sales")
-        .insert([
-          {
-            customer_name: formData.customer_name,
-            document_type: formData.document_type.toLowerCase(),
-            total,
-            items: JSON.stringify(formData.items),
-            sale_number,
-            user_id: user?.id,
-          },
-        ])
-        .select()
-        .single();
-      if (error) throw error;
-      // Descuenta stock
-      for (const item of formData.items) {
-        const prod = products.find((p) => p.id === item.product_id);
-        await supabase
-          .from("products")
-          .update({ stock: prod.stock - item.quantity })
-          .eq("id", item.product_id);
-      }
-      setAlertMsg("Venta registrada correctamente");
-      setOpen(false);
-      setFormData({
-        customer_name: "",
-        document_type: "Boleta",
-        items: [{ product_id: "", quantity: 1 }],
-      });
-      loadSales();
-      loadProducts();
-    } catch (err: any) {
-      setAlertMsg(err.message);
+    }
+    if (!registrado && ultimoError) {
+      setAlertMsg(ultimoError.message);
     }
   };
 
