@@ -11,7 +11,9 @@ import {
   AlertCircle,
   Users,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { ResponsiveBar } from "@nivo/bar";
+import { ResponsivePie } from "@nivo/pie";
+import { ResponsiveLine } from "@nivo/line";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -26,7 +28,7 @@ const Dashboard = () => {
   });
   const [salesData, setSalesData] = useState<any[]>([]);
   const [stockData, setStockData] = useState<any[]>([]);
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -36,20 +38,24 @@ const Dashboard = () => {
     // Load products stats
     const { data: products } = await supabase.from("products").select("*");
     const lowStock = products?.filter((p) => p.stock <= p.min_stock) || [];
-    
+
     // Load sales stats
     const { data: sales } = await supabase.from("sales").select("*");
     const thisMonth = new Date();
     thisMonth.setDate(1);
-    const monthlySales = sales?.filter(
-      (s) => new Date(s.created_at) >= thisMonth
-    ) || [];
-    const monthlyRevenue = monthlySales.reduce((sum, s) => sum + Number(s.total), 0);
+    const monthlySales =
+      sales?.filter((s) => new Date(s.created_at) >= thisMonth) || [];
+    const monthlyRevenue = monthlySales.reduce(
+      (sum, s) => sum + Number(s.total),
+      0
+    );
 
     // Load users count (only for gerente)
     let userCount = 0;
     if (userRole === "gerente") {
-      const { count } = await supabase.from("profiles").select("*", { count: "exact", head: true });
+      const { count } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true });
       userCount = count || 0;
     }
 
@@ -69,9 +75,12 @@ const Dashboard = () => {
     }).reverse();
 
     const salesByDay = last7Days.map((date) => {
-      const daySales = sales?.filter((s) => s.created_at.startsWith(date)) || [];
+      const daySales =
+        sales?.filter((s) => s.created_at.startsWith(date)) || [];
       return {
-        date: new Date(date).toLocaleDateString("es-ES", { weekday: "short" }),
+        date: new Date(date).toLocaleDateString("es-ES", {
+          weekday: "short",
+        }),
         ventas: daySales.length,
         monto: daySales.reduce((sum, s) => sum + Number(s.total), 0),
       };
@@ -80,25 +89,42 @@ const Dashboard = () => {
 
     // Stock data for pie chart
     const stockCategories = [
-      { name: "Stock Normal", value: (products?.filter((p) => p.stock > p.min_stock * 2) || []).length, color: "hsl(var(--chart-5))" },
-      { name: "Stock Bajo", value: (products?.filter((p) => p.stock > p.min_stock && p.stock <= p.min_stock * 2) || []).length, color: "hsl(var(--chart-2))" },
-      { name: "Stock Crítico", value: lowStock.length, color: "hsl(var(--destructive))" },
+      {
+        name: "Stock Normal",
+        value: (products?.filter((p) => p.stock > p.min_stock * 2) || [])
+          .length,
+        color: "hsl(var(--chart-5))",
+      },
+      {
+        name: "Stock Bajo",
+        value: (
+          products?.filter(
+            (p) => p.stock > p.min_stock && p.stock <= p.min_stock * 2
+          ) || []
+        ).length,
+        color: "hsl(var(--chart-2))",
+      },
+      {
+        name: "Stock Crítico",
+        value: lowStock.length,
+        color: "hsl(var(--destructive))",
+      },
     ];
     setStockData(stockCategories);
-
-    // Load alerts
-    const { data: alertsData } = await supabase
-      .from("alerts")
-      .select("*")
-      .eq("is_read", false)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    setAlerts(alertsData || []);
   };
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {alertMsg && (
+          <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-900 border border-yellow-300">
+            {alertMsg}
+            <button className="float-right" onClick={() => setAlertMsg(null)}>
+              &times;
+            </button>
+          </div>
+        )}
+
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
@@ -151,9 +177,7 @@ const Dashboard = () => {
               <div className="text-2xl font-bold">
                 ${stats.monthlyRevenue.toLocaleString("es-CL")}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Mes actual
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Mes actual</p>
             </CardContent>
           </Card>
 
@@ -175,36 +199,44 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Alerts */}
-        {alerts.length > 0 && (
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold">Alertas Recientes</h2>
-            {alerts.slice(0, 3).map((alert) => (
-              <Alert key={alert.id} variant={alert.alert_type === "stock_bajo" ? "destructive" : "default"}>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>{alert.title}</AlertTitle>
-                <AlertDescription>{alert.message}</AlertDescription>
-              </Alert>
-            ))}
-          </div>
-        )}
-
         {/* Charts */}
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Ventas Últimos 7 Días</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="ventas" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
+            <CardContent style={{ height: 300 }}>
+              <ResponsiveBar
+                data={salesData.map((d) => ({ ...d, ventas: d.ventas || 0 }))}
+                keys={["ventas"]}
+                indexBy="date"
+                margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
+                padding={0.4}
+                colors={{ scheme: "nivo" }}
+                axisBottom={{
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: 30,
+                  legend: "Día",
+                  legendPosition: "middle",
+                  legendOffset: 40,
+                }}
+                axisLeft={{
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: 0,
+                  legend: "Ventas",
+                  legendPosition: "middle",
+                  legendOffset: -50,
+                }}
+                animate={true}
+                enableLabel={false}
+                tooltip={({ id, value, indexValue }) => (
+                  <strong>
+                    {indexValue}: {value} ventas
+                  </strong>
+                )}
+              />
             </CardContent>
           </Card>
 
@@ -212,26 +244,32 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle>Estado del Inventario</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={stockData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {stockData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+            <CardContent style={{ height: 300 }}>
+              <ResponsivePie
+                data={stockData.map((d) => ({
+                  id: d.name,
+                  label: d.name,
+                  value: d.value,
+                  color: d.color,
+                }))}
+                margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                innerRadius={0.5}
+                padAngle={1}
+                colors={{ datum: "data.color" }}
+                borderWidth={2}
+                borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
+                enableArcLabels={false}
+                enableArcLinkLabels={true}
+                arcLinkLabelsSkipAngle={10}
+                arcLinkLabelsTextColor="#333"
+                arcLinkLabelsThickness={2}
+                arcLinkLabelsColor={{ from: "color" }}
+                tooltip={({ datum }) => (
+                  <strong>
+                    {datum.label}: {datum.value}
+                  </strong>
+                )}
+              />
             </CardContent>
           </Card>
         </div>
@@ -241,16 +279,59 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle>Ingresos Mensuales</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="monto" stroke="hsl(var(--chart-1))" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+            <CardContent style={{ height: 300 }}>
+              <ResponsiveLine
+                data={[
+                  {
+                    id: "Ingresos",
+                    data: salesData.map((d) => ({
+                      x: d.date,
+                      y: d.monto ?? 0,
+                    })),
+                  },
+                ]}
+                margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
+                xScale={{ type: "point" }}
+                yScale={{
+                  type: "linear",
+                  min: "auto",
+                  max: "auto",
+                  stacked: false,
+                  reverse: false,
+                }}
+                axisBottom={{
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: 30,
+                  legend: "Día",
+                  legendPosition: "middle",
+                  legendOffset: 40,
+                }}
+                axisLeft={{
+                  tickSize: 5,
+                  tickPadding: 10,
+                  tickRotation: 0,
+                  legend: "Monto",
+                  legendPosition: "middle",
+                  legendOffset: -60, // Más espacio para separar el texto del eje
+                }}
+                colors={{ scheme: "nivo" }}
+                pointSize={10}
+                pointColor={{ theme: "background" }}
+                pointBorderWidth={2}
+                pointBorderColor={{ from: "serieColor" }}
+                enableArea={true}
+                areaOpacity={0.2}
+                animate={true}
+                useMesh={true}
+                enableSlices="x"
+                enableCrosshair={true}
+                tooltip={({ point }) => (
+                  <strong>
+                    {point.data.x}: ${point.data.y}
+                  </strong>
+                )}
+              />
             </CardContent>
           </Card>
         )}

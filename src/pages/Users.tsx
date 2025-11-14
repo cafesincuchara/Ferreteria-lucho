@@ -4,9 +4,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Trash2, Edit } from "lucide-react";
@@ -37,9 +56,7 @@ const Users = () => {
   }, []);
 
   const loadUsers = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select(`
+    const { data } = await supabase.from("profiles").select(`
         *,
         user_roles (role)
       `);
@@ -48,10 +65,10 @@ const Users = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       userSchema.parse(formData);
-      
+
       if (editingUser) {
         // Update user role
         const { error: roleError } = await supabase
@@ -60,20 +77,22 @@ const Users = () => {
           .eq("user_id", editingUser.id);
 
         if (roleError) throw roleError;
-        
+
         await logAction("Actualizar usuario", "user", editingUser.id, formData);
         toast.success("Usuario actualizado");
       } else {
         // Create new user
         const redirectUrl = `${window.location.origin}/`;
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            emailRedirectTo: redirectUrl,
-            data: { full_name: formData.fullName },
-          },
-        });
+        const { data: authData, error: authError } = await supabase.auth.signUp(
+          {
+            email: formData.email,
+            password: formData.password,
+            options: {
+              emailRedirectTo: redirectUrl,
+              data: { full_name: formData.fullName },
+            },
+          }
+        );
 
         if (authError) throw authError;
 
@@ -116,7 +135,7 @@ const Users = () => {
         .eq("user_id", userId);
 
       if (error) throw error;
-      
+
       await logAction("Eliminar usuario", "user", userId);
       toast.success("Usuario eliminado");
       loadUsers();
@@ -142,28 +161,45 @@ const Users = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
-            <p className="text-muted-foreground">Administra los usuarios del sistema</p>
+            <p className="text-muted-foreground">
+              Administra los usuarios del sistema
+            </p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => {
-                setEditingUser(null);
-                setFormData({ fullName: "", email: "", password: "", role: "cajero" });
-              }}>
+              <Button
+                onClick={() => {
+                  setEditingUser(null);
+                  setFormData({
+                    fullName: "",
+                    email: "",
+                    password: "",
+                    role: "cajero",
+                  });
+                }}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Nuevo Usuario
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{editingUser ? "Editar Usuario" : "Nuevo Usuario"}</DialogTitle>
+                <DialogTitle>
+                  {editingUser ? "Editar Usuario" : "Nuevo Usuario"}
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label>Nombre Completo</Label>
                   <Input
                     value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(
+                        /[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g,
+                        ""
+                      );
+                      setFormData({ ...formData, fullName: value });
+                    }}
                     required
                     disabled={!!editingUser}
                   />
@@ -173,7 +209,9 @@ const Users = () => {
                   <Input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     required
                     disabled={!!editingUser}
                   />
@@ -184,14 +222,27 @@ const Users = () => {
                     <Input
                       type="password"
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          password: e.target.value.replace(
+                            /[^a-zA-Z0-9!@#$%^&*()_+\-=]/g,
+                            ""
+                          ),
+                        })
+                      }
                       required
                     />
                   </div>
                 )}
                 <div>
                   <Label>Rol</Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                  <Select
+                    value={formData.role}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, role: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -229,7 +280,9 @@ const Users = () => {
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.full_name}</TableCell>
+                    <TableCell className="font-medium">
+                      {user.full_name}
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="capitalize">

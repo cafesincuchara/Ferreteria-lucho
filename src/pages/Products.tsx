@@ -5,11 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { Plus, Trash2, Edit, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { logAction } from "@/lib/logger";
@@ -41,6 +59,7 @@ const Products = () => {
     min_stock: 10,
     supplier_id: "",
   });
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -50,10 +69,12 @@ const Products = () => {
   const loadProducts = async () => {
     const { data } = await supabase
       .from("products")
-      .select(`
+      .select(
+        `
         *,
         suppliers (name)
-      `)
+      `
+      )
       .order("created_at", { ascending: false });
     setProducts(data || []);
   };
@@ -65,10 +86,10 @@ const Products = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const validatedData = productSchema.parse(formData);
-      
+
       if (editingProduct) {
         const { error } = await supabase
           .from("products")
@@ -76,8 +97,21 @@ const Products = () => {
           .eq("id", editingProduct.id);
 
         if (error) throw error;
-        await logAction("Actualizar producto", "product", editingProduct.id, validatedData);
-        toast.success("Producto actualizado");
+        await logAction(
+          "Actualizar producto",
+          "product",
+          editingProduct.id,
+          validatedData
+        );
+        setAlertMsg("Producto actualizado correctamente");
+        // Eliminar alerta de stock bajo si el stock supera el mínimo
+        if (validatedData.stock > validatedData.min_stock) {
+          await supabase
+            .from("alerts")
+            .delete()
+            .eq("product_id", editingProduct.id)
+            .eq("alert_type", "stock_bajo");
+        }
       } else {
         const { error } = await supabase
           .from("products")
@@ -85,7 +119,7 @@ const Products = () => {
 
         if (error) throw error;
         await logAction("Crear producto", "product", undefined, validatedData);
-        toast.success("Producto creado");
+        setAlertMsg("Producto creado correctamente");
       }
 
       setOpen(false);
@@ -93,9 +127,9 @@ const Products = () => {
       loadProducts();
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
+        setAlertMsg(error.errors[0].message);
       } else {
-        toast.error(error.message || "Error al procesar");
+        setAlertMsg(error.message || "Error al procesar");
       }
     }
   };
@@ -111,10 +145,10 @@ const Products = () => {
 
       if (error) throw error;
       await logAction("Eliminar producto", "product", productId);
-      toast.success("Producto eliminado");
+      setAlertMsg("Producto eliminado correctamente");
       loadProducts();
     } catch (error: any) {
-      toast.error(error.message || "Error al eliminar");
+      setAlertMsg(error.message || "Error al eliminar");
     }
   };
 
@@ -150,10 +184,20 @@ const Products = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {alertMsg && (
+          <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-900 border border-yellow-300">
+            {alertMsg}
+            <button className="float-right" onClick={() => setAlertMsg(null)}>
+              &times;
+            </button>
+          </div>
+        )}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Gestión de Productos</h1>
-            <p className="text-muted-foreground">Administra el catálogo de productos</p>
+            <p className="text-muted-foreground">
+              Administra el catálogo de productos
+            </p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -164,7 +208,9 @@ const Products = () => {
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>{editingProduct ? "Editar Producto" : "Nuevo Producto"}</DialogTitle>
+                <DialogTitle>
+                  {editingProduct ? "Editar Producto" : "Nuevo Producto"}
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -172,7 +218,9 @@ const Products = () => {
                     <Label>Nombre *</Label>
                     <Input
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       required
                     />
                   </div>
@@ -180,7 +228,9 @@ const Products = () => {
                     <Label>SKU</Label>
                     <Input
                       value={formData.sku}
-                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, sku: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -188,7 +238,9 @@ const Products = () => {
                   <Label>Descripción</Label>
                   <Textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
                     rows={3}
                   />
                 </div>
@@ -199,7 +251,12 @@ const Products = () => {
                       type="number"
                       step="0.01"
                       value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price: parseFloat(e.target.value),
+                        })
+                      }
                       required
                     />
                   </div>
@@ -209,7 +266,12 @@ const Products = () => {
                       type="number"
                       step="0.01"
                       value={formData.cost}
-                      onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          cost: parseFloat(e.target.value),
+                        })
+                      }
                       required
                     />
                   </div>
@@ -220,7 +282,12 @@ const Products = () => {
                     <Input
                       type="number"
                       value={formData.stock}
-                      onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          stock: parseInt(e.target.value),
+                        })
+                      }
                       required
                     />
                   </div>
@@ -229,7 +296,12 @@ const Products = () => {
                     <Input
                       type="number"
                       value={formData.min_stock}
-                      onChange={(e) => setFormData({ ...formData, min_stock: parseInt(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          min_stock: parseInt(e.target.value),
+                        })
+                      }
                       required
                     />
                   </div>
@@ -238,7 +310,9 @@ const Products = () => {
                   <Label>Proveedor</Label>
                   <Select
                     value={formData.supplier_id}
-                    onValueChange={(value) => setFormData({ ...formData, supplier_id: value })}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, supplier_id: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar proveedor" />
@@ -285,16 +359,24 @@ const Products = () => {
                         <div>
                           <div className="font-medium">{product.name}</div>
                           {product.description && (
-                            <div className="text-xs text-muted-foreground">{product.description}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {product.description}
+                            </div>
                           )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>{product.sku || "-"}</TableCell>
-                    <TableCell>${Number(product.price).toLocaleString("es-CL")}</TableCell>
+                    <TableCell>
+                      ${Number(product.price).toLocaleString("es-CL")}
+                    </TableCell>
                     <TableCell>
                       <Badge
-                        variant={product.stock <= product.min_stock ? "destructive" : "secondary"}
+                        variant={
+                          product.stock <= product.min_stock
+                            ? "destructive"
+                            : "secondary"
+                        }
                       >
                         {product.stock} unidades
                       </Badge>
