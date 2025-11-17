@@ -27,6 +27,7 @@ dist-ssr
 *.env
 supabase/config.toml
 supabase/migrations/*.sql
+
 # Excluir archivos sensibles
 *.key
 *.pem
