@@ -56,6 +56,7 @@ const Users = () => {
     password: "",
     role: "cajero" as any,
   });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -71,7 +72,7 @@ const Users = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setLoading(true);
     try {
       if (editingUser) {
         userEditSchema.parse(formData);
@@ -138,6 +139,7 @@ const Users = () => {
         toast.error(error.message || "Error al procesar");
       }
     }
+    setLoading(false);
   };
 
   const handleDelete = async (userId: string) => {
@@ -269,8 +271,12 @@ const Users = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" className="w-full">
-                  {editingUser ? "Actualizar" : "Crear"} Usuario
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading
+                    ? "Procesando..."
+                    : editingUser
+                    ? "Actualizar Usuario"
+                    : "Crear Usuario"}
                 </Button>
               </form>
             </DialogContent>
