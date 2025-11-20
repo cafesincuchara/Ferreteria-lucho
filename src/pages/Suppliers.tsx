@@ -22,6 +22,28 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2, Edit } from "lucide-react";
 
+interface Supplier {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  category: string | null;
+  supplier_id: string | null;
+}
+
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
 const Suppliers = () => {
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [confirmMsg, setConfirmMsg] = useState<{
@@ -29,18 +51,19 @@ const Suppliers = () => {
     msg: string;
   } | null>(null);
   const { userRole } = useAuth();
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [open, setOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<any>(null);
-  const [formData, setFormData] = useState({
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
     phone: "",
     address: "",
   });
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [filterNombre, setFilterNombre] = useState("");
   const [filterCategoria, setFilterCategoria] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     loadSuppliers();
@@ -48,35 +71,77 @@ const Suppliers = () => {
   }, []);
 
   const loadProducts = async () => {
-    const { data } = await supabase.from("products").select("*");
-    setProducts(data || []);
+    try {
+      const { data, error } = await supabase.from("products").select("*");
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (err: any) {
+      console.error("Error al cargar productos:", err);
+      setAlertMsg("Error al cargar productos: " + err.message);
+    }
   };
 
   const loadSuppliers = async () => {
-    const { data } = await supabase.from("suppliers").select("*");
-    setSuppliers(data || []);
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.from("suppliers").select("*");
+      if (error) throw error;
+      setSuppliers(data || []);
+    } catch (err: any) {
+      console.error("Error al cargar proveedores:", err);
+      setAlertMsg("Error al cargar proveedores: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return;
+    
+    if (!formData.name.trim()) {
+      setAlertMsg("El nombre del proveedor es obligatorio");
+      return;
+    }
+
     try {
+      setIsLoading(true);
+      
       if (editingSupplier) {
-        await supabase
+        const { error } = await supabase
           .from("suppliers")
           .update(formData)
           .eq("id", editingSupplier.id);
+        
+        if (error) throw error;
+        setAlertMsg("Proveedor actualizado correctamente");
       } else {
-        await supabase.from("suppliers").insert(formData);
+        const { error } = await supabase.from("suppliers").insert(formData);
+        
+        if (error) throw error;
+        setAlertMsg("Proveedor creado correctamente");
       }
+      
       setOpen(false);
-      setFormData({ name: "", email: "", phone: "", address: "" });
-      setEditingSupplier(null);
-      loadSuppliers();
-    } catch (err) {}
+      resetForm();
+      await loadSuppliers();
+    } catch (err: any) {
+      console.error("Error al guardar proveedor:", err);
+      if (err?.message?.includes("Failed to fetch")) {
+        setAlertMsg("Sin conexión a internet. Intenta nuevamente.");
+      } else {
+        setAlertMsg("Error al guardar: " + err.message);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleEdit = (supplier: any) => {
+  const resetForm = () => {
+    setFormData({ name: "", email: "", phone: "", address: "" });
+    setEditingSupplier(null);
+  };
+
+  const handleEdit = (supplier: Supplier) => {
     setEditingSupplier(supplier);
     setFormData({
       name: supplier.name,
@@ -89,24 +154,33 @@ const Suppliers = () => {
 
   const handleDelete = async (id: string) => {
     setConfirmMsg({ id, msg: "¿Estás seguro de eliminar este proveedor?" });
-    window.confirmDeleteSupplier = async () => {
+  };
+
+  const confirmDelete = async () => {
+    if (!confirmMsg) return;
+    
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from("suppliers")
+        .delete()
+        .eq("id", confirmMsg.id);
+      
+      if (error) throw error;
+      
+      setAlertMsg("Proveedor eliminado correctamente");
       setConfirmMsg(null);
-      try {
-        const { error } = await supabase
-          .from("suppliers")
-          .delete()
-          .eq("id", id);
-        if (error) throw error;
-        setAlertMsg("Proveedor eliminado correctamente");
-        loadSuppliers();
-      } catch (err: any) {
-        if (err?.message?.includes("Failed to fetch")) {
-          setAlertMsg("Sin conexión a internet. Intenta nuevamente.");
-        } else {
-          setAlertMsg(err.message);
-        }
+      await loadSuppliers();
+    } catch (err: any) {
+      console.error("Error al eliminar proveedor:", err);
+      if (err?.message?.includes("Failed to fetch")) {
+        setAlertMsg("Sin conexión a internet. Intenta nuevamente.");
+      } else {
+        setAlertMsg("Error al eliminar: " + err.message);
       }
-    };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (userRole !== "gerente" && userRole !== "bodeguero") {
@@ -117,20 +191,26 @@ const Suppliers = () => {
     );
   }
 
-  // Filtro reactivo de proveedores
   const filteredSuppliers = suppliers.filter((s) => {
     let match = true;
-    if (
-      filterNombre &&
-      !s.name?.toLowerCase().includes(filterNombre.toLowerCase())
-    )
+    
+    if (filterNombre && !s.name?.toLowerCase().includes(filterNombre.toLowerCase())) {
       match = false;
-    if (filterCategoria) {
-      const productos = products.filter((p) => p.supplier_id === s.id);
-      if (!productos.some((p) => p.category === filterCategoria)) match = false;
     }
+    
+    if (filterCategoria) {
+      const supplierProducts = products.filter((p) => p.supplier_id === s.id);
+      if (!supplierProducts.some((p) => p.category === filterCategoria)) {
+        match = false;
+      }
+    }
+    
     return match;
   });
+
+  const uniqueCategories = Array.from(
+    new Set(products.map((p) => p.category).filter(Boolean))
+  );
 
   return (
     <DashboardLayout>
@@ -138,51 +218,57 @@ const Suppliers = () => {
         {alertMsg && (
           <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-900 border border-yellow-300">
             {alertMsg}
-            <button className="float-right" onClick={() => setAlertMsg(null)}>
+            <button 
+              className="float-right font-bold" 
+              onClick={() => setAlertMsg(null)}
+              aria-label="Cerrar alerta"
+            >
               &times;
             </button>
           </div>
         )}
+        
         {confirmMsg && (
           <div className="mb-4 p-3 rounded bg-red-100 text-red-900 border border-red-300 flex justify-between items-center">
             <span>{confirmMsg.msg}</span>
-            <div>
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="destructive"
-                onClick={() => window.confirmDeleteSupplier()}
+                onClick={confirmDelete}
+                disabled={isLoading}
               >
                 Eliminar
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                className="ml-2"
                 onClick={() => setConfirmMsg(null)}
+                disabled={isLoading}
               >
                 Cancelar
               </Button>
             </div>
           </div>
         )}
+        
         <h1 className="text-3xl font-bold">Proveedores</h1>
-        {/* Filtros avanzados */}
+        
         <div className="mb-4 flex gap-2 flex-wrap items-end">
           <Input
             value={filterNombre}
             onChange={(e) => setFilterNombre(e.target.value)}
-            placeholder="Nombre"
+            placeholder="Filtrar por nombre"
+            className="max-w-xs"
           />
           <select
-            className="border rounded px-2 py-2"
+            className="border rounded px-3 py-2"
             value={filterCategoria}
             onChange={(e) => setFilterCategoria(e.target.value)}
           >
             <option value="">Todas las categorías</option>
-            {Array.from(
-              new Set(products.map((p) => p.category).filter(Boolean))
-            ).map((cat) => (
-              <option key={cat} value={cat}>
+            {uniqueCategories.map((cat) => (
+              <option key={cat} value={cat as string}>
                 {cat}
               </option>
             ))}
@@ -197,6 +283,7 @@ const Suppliers = () => {
             Limpiar filtros
           </Button>
         </div>
+        
         <Card>
           <CardHeader>
             <CardTitle>Lista de Proveedores</CardTitle>
@@ -206,15 +293,7 @@ const Suppliers = () => {
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                   <Button
-                    onClick={() => {
-                      setEditingSupplier(null);
-                      setFormData({
-                        name: "",
-                        email: "",
-                        phone: "",
-                        address: "",
-                      });
-                    }}
+                    onClick={resetForm}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Nuevo Proveedor
@@ -228,96 +307,115 @@ const Suppliers = () => {
                   </DialogHeader>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <Input
-                      placeholder="Nombre"
+                      placeholder="Nombre *"
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
                       required
+                      disabled={isLoading}
                     />
                     <Input
-                      placeholder="Email"
+                      placeholder="Email *"
                       type="email"
                       value={formData.email}
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
                       }
                       required
+                      disabled={isLoading}
                     />
                     <Input
-                      placeholder="Teléfono"
+                      placeholder="Teléfono *"
                       value={formData.phone}
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
                       }
                       required
+                      disabled={isLoading}
                     />
                     <Input
-                      placeholder="Dirección"
+                      placeholder="Dirección *"
                       value={formData.address}
                       onChange={(e) =>
                         setFormData({ ...formData, address: e.target.value })
                       }
                       required
+                      disabled={isLoading}
                     />
-                    <Button type="submit" className="w-full">
-                      {editingSupplier ? "Actualizar" : "Crear"} Proveedor
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Guardando..." : editingSupplier ? "Actualizar" : "Crear"} Proveedor
                     </Button>
                   </form>
                 </DialogContent>
               </Dialog>
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Teléfono</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  {userRole === "bodeguero" && (
-                    <TableHead>Productos Suministrados</TableHead>
-                  )}
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSuppliers.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell>{s.name}</TableCell>
-                    <TableCell>{s.email || "-"}</TableCell>
-                    <TableCell>{s.phone || "-"}</TableCell>
-                    <TableCell>{s.address || "-"}</TableCell>
+            
+            {isLoading ? (
+              <div className="text-center py-4">Cargando...</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Dirección</TableHead>
                     {userRole === "bodeguero" && (
-                      <TableCell>
-                        {products.filter((p) => p.supplier_id === s.id).length >
-                        0
-                          ? products
-                              .filter((p) => p.supplier_id === s.id)
-                              .map((p) => p.name)
-                              .join(", ")
-                          : "-"}
-                      </TableCell>
+                      <TableHead>Productos Suministrados</TableHead>
                     )}
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(s)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(s.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredSuppliers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={userRole === "bodeguero" ? 6 : 5} className="text-center">
+                        No se encontraron proveedores
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredSuppliers.map((s) => {
+                      const supplierProducts = products.filter((p) => p.supplier_id === s.id);
+                      
+                      return (
+                        <TableRow key={s.id}>
+                          <TableCell>{s.name}</TableCell>
+                          <TableCell>{s.email || "-"}</TableCell>
+                          <TableCell>{s.phone || "-"}</TableCell>
+                          <TableCell>{s.address || "-"}</TableCell>
+                          {userRole === "bodeguero" && (
+                            <TableCell>
+                              {supplierProducts.length > 0
+                                ? supplierProducts.map((p) => p.name).join(", ")
+                                : "-"}
+                            </TableCell>
+                          )}
+                          <TableCell className="text-right space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(s)}
+                              disabled={isLoading}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(s.id)}
+                              disabled={isLoading}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
