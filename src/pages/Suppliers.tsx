@@ -1,3 +1,8 @@
+const [alertMsg, setAlertMsg] = useState<string | null>(null);
+const [confirmMsg, setConfirmMsg] = useState<{
+  id: string;
+  msg: string;
+} | null>(null);
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,9 +88,25 @@ const Suppliers = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar proveedor?")) return;
-    await supabase.from("suppliers").delete().eq("id", id);
-    loadSuppliers();
+    setConfirmMsg({ id, msg: "¿Estás seguro de eliminar este proveedor?" });
+    window.confirmDeleteSupplier = async () => {
+      setConfirmMsg(null);
+      try {
+        const { error } = await supabase
+          .from("suppliers")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
+        setAlertMsg("Proveedor eliminado correctamente");
+        loadSuppliers();
+      } catch (err: any) {
+        if (err?.message?.includes("Failed to fetch")) {
+          setAlertMsg("Sin conexión a internet. Intenta nuevamente.");
+        } else {
+          setAlertMsg(err.message);
+        }
+      }
+    };
   };
 
   if (userRole !== "gerente" && userRole !== "bodeguero") {
@@ -114,6 +135,36 @@ const Suppliers = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {alertMsg && (
+          <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-900 border border-yellow-300">
+            {alertMsg}
+            <button className="float-right" onClick={() => setAlertMsg(null)}>
+              &times;
+            </button>
+          </div>
+        )}
+        {confirmMsg && (
+          <div className="mb-4 p-3 rounded bg-red-100 text-red-900 border border-red-300 flex justify-between items-center">
+            <span>{confirmMsg.msg}</span>
+            <div>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => window.confirmDeleteSupplier()}
+              >
+                Eliminar
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-2"
+                onClick={() => setConfirmMsg(null)}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
         <h1 className="text-3xl font-bold">Proveedores</h1>
         {/* Filtros avanzados */}
         <div className="mb-4 flex gap-2 flex-wrap items-end">

@@ -60,6 +60,10 @@ const Products = () => {
     supplier_id: "",
   });
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [confirmMsg, setConfirmMsg] = useState<{
+    id: string;
+    msg: string;
+  } | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -135,21 +139,29 @@ const Products = () => {
   };
 
   const handleDelete = async (productId: string) => {
-    if (!confirm("¿Estás seguro de eliminar este producto?")) return;
-
-    try {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", productId);
-
-      if (error) throw error;
-      await logAction("Eliminar producto", "product", productId);
-      setAlertMsg("Producto eliminado correctamente");
-      loadProducts();
-    } catch (error: any) {
-      setAlertMsg(error.message || "Error al eliminar");
-    }
+    setConfirmMsg({
+      id: productId,
+      msg: "¿Estás seguro de eliminar este producto?",
+    });
+    window.confirmDeleteProduct = async () => {
+      setConfirmMsg(null);
+      try {
+        const { error } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", productId);
+        if (error) throw error;
+        await logAction("Eliminar producto", "product", productId);
+        setAlertMsg("Producto eliminado correctamente");
+        loadProducts();
+      } catch (error: any) {
+        if (error?.message?.includes("Failed to fetch")) {
+          setAlertMsg("Sin conexión a internet. Intenta nuevamente.");
+        } else {
+          setAlertMsg(error.message || "Error al eliminar");
+        }
+      }
+    };
   };
 
   const handleEdit = (product: any) => {
@@ -190,6 +202,28 @@ const Products = () => {
             <button className="float-right" onClick={() => setAlertMsg(null)}>
               &times;
             </button>
+          </div>
+        )}
+        {confirmMsg && (
+          <div className="mb-4 p-3 rounded bg-red-100 text-red-900 border border-red-300 flex justify-between items-center">
+            <span>{confirmMsg.msg}</span>
+            <div>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => window.confirmDeleteProduct()}
+              >
+                Eliminar
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-2"
+                onClick={() => setConfirmMsg(null)}
+              >
+                Cancelar
+              </Button>
+            </div>
           </div>
         )}
         <div className="flex justify-between items-center">

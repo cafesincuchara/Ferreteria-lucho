@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 
 const Inventory = () => {
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const { userRole } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -55,23 +56,26 @@ const Inventory = () => {
     if (filterSupplier && String(product.supplier_id) !== filterSupplier)
       match = false;
 
-    if (filterCategory && product.category !== filterCategory)
-      match = false;
+    if (filterCategory && product.category !== filterCategory) match = false;
 
     if (filterStock) {
       if (filterStock === "normal" && product.stock <= product.min_stock * 2)
         match = false;
 
-      if (filterStock === "bajo" &&
-          !(product.stock > product.min_stock && product.stock <= product.min_stock * 2))
+      if (
+        filterStock === "bajo" &&
+        !(
+          product.stock > product.min_stock &&
+          product.stock <= product.min_stock * 2
+        )
+      )
         match = false;
 
       if (filterStock === "critico" && !(product.stock <= product.min_stock))
         match = false;
     }
 
-    if (showCritical && !(product.stock <= product.min_stock))
-      match = false;
+    if (showCritical && !(product.stock <= product.min_stock)) match = false;
 
     return match;
   });
@@ -83,6 +87,14 @@ const Inventory = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {alertMsg && (
+          <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-900 border border-yellow-300">
+            {alertMsg}
+            <button className="float-right" onClick={() => setAlertMsg(null)}>
+              &times;
+            </button>
+          </div>
+        )}
 
         <h1 className="text-3xl font-bold">Inventario</h1>
         <p className="text-muted-foreground">
@@ -100,7 +112,6 @@ const Inventory = () => {
         {/* 🔽 FILTROS — AHORA SI FUNCIONA */}
         {userRole === "bodeguero" && (
           <div className="flex gap-2 flex-wrap mt-4">
-
             {/* Proveedor */}
             <select
               className="border rounded px-2 py-2"
@@ -111,7 +122,9 @@ const Inventory = () => {
               {Array.from(
                 new Set(products.map((p) => p.supplier_id).filter(Boolean))
               ).map((sup) => (
-                <option key={sup} value={sup}>{sup}</option>
+                <option key={sup} value={sup}>
+                  {sup}
+                </option>
               ))}
             </select>
 
@@ -125,7 +138,9 @@ const Inventory = () => {
               {Array.from(
                 new Set(products.map((p) => p.category).filter(Boolean))
               ).map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
 
@@ -157,7 +172,6 @@ const Inventory = () => {
             >
               {showCritical ? "Ver todos" : "Ver stock crítico"}
             </button>
-
           </div>
         )}
 
@@ -247,7 +261,6 @@ const Inventory = () => {
         {userRole === "bodeguero" && selectedProduct && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white rounded shadow-lg p-6 w-full max-w-lg relative">
-
               <button
                 className="absolute top-2 right-2"
                 onClick={() => {
@@ -274,23 +287,31 @@ const Inventory = () => {
                 className="bg-green-600 text-white px-3 py-1 rounded mb-4"
                 onClick={async () => {
                   if (!entryAmount || Number(entryAmount) <= 0) return;
-
-                  await supabase.from("inventory_movements").insert({
-                    product_id: selectedProduct.id,
-                    type: "entrada",
-                    amount: Number(entryAmount),
-                  });
-
-                  await supabase
-                    .from("products")
-                    .update({
-                      stock: selectedProduct.stock + Number(entryAmount),
-                    })
-                    .eq("id", selectedProduct.id);
-
-                  setEntryAmount("");
-                  loadProducts();
-                  loadMovements(selectedProduct.id);
+                  try {
+                    await supabase.from("inventory_movements").insert({
+                      product_id: selectedProduct.id,
+                      type: "entrada",
+                      amount: Number(entryAmount),
+                    });
+                    await supabase
+                      .from("products")
+                      .update({
+                        stock: selectedProduct.stock + Number(entryAmount),
+                      })
+                      .eq("id", selectedProduct.id);
+                    setAlertMsg("Entrada registrada correctamente");
+                    setEntryAmount("");
+                    loadProducts();
+                    loadMovements(selectedProduct.id);
+                  } catch (err: any) {
+                    if (err?.message?.includes("Failed to fetch")) {
+                      setAlertMsg(
+                        "Sin conexión a internet. Intenta nuevamente."
+                      );
+                    } else {
+                      setAlertMsg(err.message || "Error al registrar entrada");
+                    }
+                  }
                 }}
               >
                 Guardar entrada
@@ -317,11 +338,9 @@ const Inventory = () => {
                   ))}
                 </tbody>
               </table>
-
             </div>
           </div>
         )}
-
       </div>
     </DashboardLayout>
   );

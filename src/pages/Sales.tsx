@@ -44,6 +44,7 @@ const Sales = () => {
     items: [{ product_id: "", quantity: 1 }],
   });
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [confirmMsg, setConfirmMsg] = useState<string | null>(null);
   // Filtros avanzados
   const [filterCliente, setFilterCliente] = useState("");
   const [filterProducto, setFilterProducto] = useState("");
@@ -202,15 +203,26 @@ const Sales = () => {
 
   // Eliminar venta
   const handleDelete = async (saleId: string) => {
-    if (!confirm("¿Eliminar esta venta?")) return;
-    try {
-      const { error } = await supabase.from("sales").delete().eq("id", saleId);
-      if (error) throw error;
-      setAlertMsg("Venta eliminada correctamente");
-      loadSales();
-    } catch (err: any) {
-      setAlertMsg(err.message);
-    }
+    setConfirmMsg("¿Estás seguro de eliminar esta venta?");
+    // La confirmación se maneja en el render
+    window.confirmDeleteSale = async () => {
+      setConfirmMsg(null);
+      try {
+        const { error } = await supabase
+          .from("sales")
+          .delete()
+          .eq("id", saleId);
+        if (error) throw error;
+        setAlertMsg("Venta eliminada correctamente");
+        loadSales();
+      } catch (err: any) {
+        if (err?.message?.includes("Failed to fetch")) {
+          setAlertMsg("Sin conexión a internet. Intenta nuevamente.");
+        } else {
+          setAlertMsg(err.message);
+        }
+      }
+    };
   };
 
   // Agregar/quitar productos en el formulario
@@ -266,6 +278,28 @@ const Sales = () => {
             <button className="float-right" onClick={() => setAlertMsg(null)}>
               &times;
             </button>
+          </div>
+        )}
+        {confirmMsg && (
+          <div className="mb-4 p-3 rounded bg-red-100 text-red-900 border border-red-300 flex justify-between items-center">
+            <span>{confirmMsg}</span>
+            <div>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => window.confirmDeleteSale()}
+              >
+                Eliminar
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-2"
+                onClick={() => setConfirmMsg(null)}
+              >
+                Cancelar
+              </Button>
+            </div>
           </div>
         )}
         <h1 className="text-3xl font-bold">Ventas</h1>

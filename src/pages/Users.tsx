@@ -47,6 +47,11 @@ const userEditSchema = z.object({
 });
 
 const Users = () => {
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [confirmMsg, setConfirmMsg] = useState<{
+    id: string;
+    msg: string;
+  } | null>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -143,22 +148,29 @@ const Users = () => {
   };
 
   const handleDelete = async (userId: string) => {
-    if (!confirm("¿Estás seguro de eliminar este usuario?")) return;
-
-    try {
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId);
-
-      if (error) throw error;
-
-      await logAction("Eliminar usuario", "user", userId);
-      toast.success("Usuario eliminado");
-      loadUsers();
-    } catch (error: any) {
-      toast.error(error.message || "Error al eliminar");
-    }
+    setConfirmMsg({
+      id: userId,
+      msg: "¿Estás seguro de eliminar este usuario?",
+    });
+    window.confirmDeleteUser = async () => {
+      setConfirmMsg(null);
+      try {
+        const { error } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", userId);
+        if (error) throw error;
+        await logAction("Eliminar usuario", "user", userId);
+        setAlertMsg("Usuario eliminado correctamente");
+        loadUsers();
+      } catch (error: any) {
+        if (error?.message?.includes("Failed to fetch")) {
+          setAlertMsg("Sin conexión a internet. Intenta nuevamente.");
+        } else {
+          setAlertMsg(error.message || "Error al eliminar");
+        }
+      }
+    };
   };
 
   const handleEdit = (user: any) => {
@@ -175,6 +187,36 @@ const Users = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {alertMsg && (
+          <div className="mb-4 p-3 rounded bg-yellow-100 text-yellow-900 border border-yellow-300">
+            {alertMsg}
+            <button className="float-right" onClick={() => setAlertMsg(null)}>
+              &times;
+            </button>
+          </div>
+        )}
+        {confirmMsg && (
+          <div className="mb-4 p-3 rounded bg-red-100 text-red-900 border border-red-300 flex justify-between items-center">
+            <span>{confirmMsg.msg}</span>
+            <div>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => window.confirmDeleteUser()}
+              >
+                Eliminar
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-2"
+                onClick={() => setConfirmMsg(null)}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
