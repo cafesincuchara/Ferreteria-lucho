@@ -1,8 +1,3 @@
-const [alertMsg, setAlertMsg] = useState<string | null>(null);
-const [confirmMsg, setConfirmMsg] = useState<{
-  id: string;
-  msg: string;
-} | null>(null);
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +23,11 @@ import {
 import { Plus, Trash2, Edit } from "lucide-react";
 
 const Suppliers = () => {
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [confirmMsg, setConfirmMsg] = useState<{
+    id: string;
+    msg: string;
+  } | null>(null);
   const { userRole } = useAuth();
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
