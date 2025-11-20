@@ -17,6 +17,7 @@ import Alerts from "./pages/Alerts";
 import Logs from "./pages/Logs";
 import Suppliers from "./pages/Suppliers";
 import Inventory from "./pages/Inventory";
+import React from "react";
 
 const queryClient = new QueryClient();
 
@@ -112,3 +113,5 @@ const App = () => (
 );
 
 export default App;
+
+<div id="root"></div>;
