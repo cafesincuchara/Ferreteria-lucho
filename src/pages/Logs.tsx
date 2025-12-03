@@ -12,10 +12,36 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { format } from "date-fns";
+import { es, enUS } from "date-fns/locale";
+
+const translations = {
+  en: {
+    title: "Action History",
+    registeredActions: "Registered Actions",
+    date: "Date",
+    user: "User",
+    action: "Action",
+    entity: "Entity",
+    details: "Details",
+  },
+  es: {
+    title: "Historial de Acciones",
+    registeredActions: "Acciones Registradas",
+    date: "Fecha",
+    user: "Usuario",
+    action: "Acción",
+    entity: "Entidad",
+    details: "Detalles",
+  },
+};
 
 const Logs = () => {
   const { userRole } = useAuth();
   const [logs, setLogs] = useState<any[]>([]);
+  const [language, setLanguage] = useState("es");
+
+  const t = translations[language];
+  const locale = language === "es" ? es : enUS;
 
   useEffect(() => {
     loadLogs();
@@ -40,27 +66,31 @@ const Logs = () => {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        <h1 className="text-3xl font-bold">Historial de Acciones</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">{t.title}</h1>
+        </div>
         <Card>
           <CardHeader>
-            <CardTitle>Acciones Registradas</CardTitle>
+            <CardTitle>{t.registeredActions}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Acción</TableHead>
-                  <TableHead>Entidad</TableHead>
-                  <TableHead>Detalles</TableHead>
+                  <TableHead>{t.date}</TableHead>
+                  <TableHead>{t.user}</TableHead>
+                  <TableHead>{t.action}</TableHead>
+                  <TableHead>{t.entity}</TableHead>
+                  <TableHead>{t.details}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell>
-                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}
+                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", {
+                        locale,
+                      })}
                     </TableCell>
                     <TableCell>{log.user_id}</TableCell>
                     <TableCell>{log.action}</TableCell>

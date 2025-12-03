@@ -18,6 +18,11 @@ import {
   VictoryTooltip,
 } from "victory";
 
+const translations = {
+  en: { switchLanguage: "Switch to English" },
+  es: { switchLanguage: "Cambiar a Español" },
+};
+
 const Dashboard = () => {
   const { userRole } = useAuth();
 
@@ -45,6 +50,7 @@ const Dashboard = () => {
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [language, setLanguage] = useState("es");
 
   useEffect(() => {
     loadDashboardData();
@@ -231,6 +237,8 @@ const Dashboard = () => {
     }
   };
 
+  const t = translations[language];
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -245,6 +253,15 @@ const Dashboard = () => {
           <p className="text-muted-foreground">
             Bienvenido a Ferretería Don Lucho
           </p>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={() => setLanguage(language === "es" ? "en" : "es")}
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
+          >
+            {language === "es" ? "Switch to English" : "Cambiar a Español"}
+          </button>
         </div>
 
         {loading ? (
