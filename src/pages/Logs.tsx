@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { format } from "date-fns";
 
 const Logs = () => {
   const { userRole } = useAuth();
@@ -58,11 +59,21 @@ const Logs = () => {
               <TableBody>
                 {logs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell>{log.created_at}</TableCell>
+                    <TableCell>
+                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}
+                    </TableCell>
                     <TableCell>{log.user_id}</TableCell>
                     <TableCell>{log.action}</TableCell>
                     <TableCell>{log.entity_type}</TableCell>
-                    <TableCell>{JSON.stringify(log.details)}</TableCell>
+                    <TableCell>
+                      {typeof log.details === "object" ? (
+                        <pre className="whitespace-pre-wrap text-sm">
+                          {JSON.stringify(log.details, null, 2)}
+                        </pre>
+                      ) : (
+                        log.details
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
