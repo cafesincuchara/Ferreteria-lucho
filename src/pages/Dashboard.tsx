@@ -20,13 +20,70 @@ import {
 } from "victory";
 
 const translations = {
-  en: { switchLanguage: "Switch to English" },
-  es: { switchLanguage: "Cambiar a Español" },
+  en: {
+    dashboard: "Dashboard",
+    welcome: "Welcome to Don Lucho's Hardware Store",
+    switchLanguage: "Switch to Spanish",
+    totalRevenue: "Total Revenue",
+    activeSuppliers: "Active Suppliers",
+    topProducts: "Top Sold Products",
+    recentSales: "Recent Sales",
+    totalProducts: "Total Products",
+    lowStock: "with low stock",
+    activeUsers: "Active Users",
+    registeredSales: "Registered Sales",
+    monthlyTotal: "Monthly Total",
+    criticalStock: "Products with Critical Stock",
+    checkInventory: "Check inventory to restock.",
+    soldProductsRanking: "Ranking of Sold Products",
+    noSoldProducts: "No sold products data.",
+    activeSuppliersChart: "Active Suppliers",
+    noSuppliers: "No supplier data.",
+    last7DaysSales: "Sales in the Last 7 Days",
+    noSales: "No sales data.",
+    inventoryStatus: "Inventory Status",
+    inventoryColors: "Colors: Inventory Status",
+    normalStock: "Normal Stock",
+    lowStockLabel: "Low Stock",
+    criticalStockLabel: "Critical Stock",
+    loading: "Loading data...",
+    retry: "Retry",
+  },
+  es: {
+    dashboard: "Dashboard",
+    welcome: "Bienvenido a Ferretería Don Lucho",
+    switchLanguage: "Cambiar a Inglés",
+    totalRevenue: "Ingresos Totales",
+    activeSuppliers: "Proveedores Activos",
+    topProducts: "Top Productos Vendidos",
+    recentSales: "Ventas Recientes",
+    totalProducts: "Total Productos",
+    lowStock: "con stock bajo",
+    activeUsers: "Usuarios Activos",
+    registeredSales: "Ventas Registradas",
+    monthlyTotal: "Total del mes",
+    criticalStock: "Productos con Stock Crítico",
+    checkInventory: "Revisa el inventario para reabastecer.",
+    soldProductsRanking: "Ranking Productos Vendidos",
+    noSoldProducts: "No hay datos de productos vendidos.",
+    activeSuppliersChart: "Proveedores Activos",
+    noSuppliers: "No hay datos de proveedores.",
+    last7DaysSales: "Ventas Últimos 7 Días",
+    noSales: "No hay datos de ventas.",
+    inventoryStatus: "Estado del Inventario",
+    inventoryColors: "Colores: Estado del inventario",
+    normalStock: "Stock Normal",
+    lowStockLabel: "Stock Bajo",
+    criticalStockLabel: "Stock Crítico",
+    loading: "Cargando datos...",
+    retry: "Reintentar",
+  },
 };
 
 const Dashboard = () => {
   const { userRole } = useAuth();
   const { language, setLanguage } = useContext(LanguageContext);
+  const t = translations[language];
 
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -238,43 +295,36 @@ const Dashboard = () => {
     }
   };
 
-  const t = translations[language];
-
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         {connectionError ? (
           <NoConnectionScreen />
         ) : alertMsg ? (
-          <ErrorScreen message={alertMsg} onRetry={loadDashboardData} />
+          <ErrorScreen message={t.retry} onRetry={loadDashboardData} />
         ) : null}
 
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Bienvenido a Ferretería Don Lucho
-          </p>
+          <h1 className="text-3xl font-bold">{t.dashboard}</h1>
+          <p className="text-muted-foreground">{t.welcome}</p>
         </div>
 
         <div className="flex justify-end">
           <button
             onClick={() => {
               const newLanguage = language === "es" ? "en" : "es";
-              console.log("Cambiando idioma a:", newLanguage);
               setLanguage(newLanguage);
             }}
             className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
           >
-            {language === "es" ? "Switch to English" : "Cambiar a Español"}
+            {t.switchLanguage}
           </button>
         </div>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-            <span className="text-lg text-muted-foreground">
-              Cargando datos...
-            </span>
+            <span className="text-lg text-muted-foreground">{t.loading}</span>
           </div>
         ) : (
           <>
@@ -284,13 +334,16 @@ const Dashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Ingresos Totales
+                    {t.totalRevenue}
                   </CardTitle>
                   <DollarSign className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    ${stats.totalRevenue.toLocaleString("es-CL")}
+                    $
+                    {stats.totalRevenue.toLocaleString(
+                      language === "es" ? "es-CL" : "en-US"
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -299,7 +352,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Proveedores Activos
+                    {t.activeSuppliers}
                   </CardTitle>
                   <Package className="h-4 w-4 text-blue-600" />
                 </CardHeader>
@@ -314,7 +367,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Top Productos Vendidos
+                    {t.topProducts}
                   </CardTitle>
                   <ShoppingCart className="h-4 w-4 text-orange-600" />
                 </CardHeader>
@@ -322,7 +375,8 @@ const Dashboard = () => {
                   <ul className="text-sm mt-2">
                     {stats.topProducts.map((p, idx) => (
                       <li key={idx}>
-                        {p.name}: {p.qty} vendidos
+                        {p.name}: {p.qty}{" "}
+                        {language === "es" ? "vendidos" : "sold"}
                       </li>
                     ))}
                   </ul>
@@ -333,7 +387,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Ventas Recientes
+                    {t.recentSales}
                   </CardTitle>
                   <ShoppingCart className="h-4 w-4 text-purple-600" />
                 </CardHeader>
@@ -341,8 +395,13 @@ const Dashboard = () => {
                   <ul className="text-sm mt-2">
                     {stats.recentSales.map((s, idx) => (
                       <li key={idx}>
-                        {new Date(s.created_at).toLocaleString("es-CL")} - $
-                        {Number(s.total).toLocaleString("es-CL")}
+                        {new Date(s.created_at).toLocaleString(
+                          language === "es" ? "es-CL" : "en-US"
+                        )}{" "}
+                        - $
+                        {Number(s.total).toLocaleString(
+                          language === "es" ? "es-CL" : "en-US"
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -351,7 +410,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Total Productos
+                    {t.totalProducts}
                   </CardTitle>
                   <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -361,7 +420,7 @@ const Dashboard = () => {
                   </div>
                   {stats.lowStockProducts > 0 && (
                     <p className="text-xs text-destructive mt-1">
-                      {stats.lowStockProducts} con stock bajo
+                      {stats.lowStockProducts} {t.lowStock}
                     </p>
                   )}
                 </CardContent>
@@ -372,7 +431,7 @@ const Dashboard = () => {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">
-                      Usuarios Activos
+                      {t.activeUsers}
                     </CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
@@ -387,15 +446,17 @@ const Dashboard = () => {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">
-                      Ventas Registradas
+                      {t.registeredSales}
                     </CardTitle>
                     <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{stats.totalSales}</div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Total del mes: $
-                      {stats.monthlyRevenue.toLocaleString("es-CL")}
+                      {t.monthlyTotal}: $
+                      {stats.monthlyRevenue.toLocaleString(
+                        language === "es" ? "es-CL" : "en-US"
+                      )}
                     </p>
                   </CardContent>
                 </Card>
@@ -406,7 +467,7 @@ const Dashboard = () => {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">
-                      Productos con Stock Crítico
+                      {t.criticalStock}
                     </CardTitle>
                     <Package className="h-4 w-4 text-destructive" />
                   </CardHeader>
@@ -415,7 +476,7 @@ const Dashboard = () => {
                       {stats.lowStockProducts}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Revisa el inventario para reabastecer.
+                      {t.checkInventory}
                     </p>
                   </CardContent>
                 </Card>
@@ -427,12 +488,12 @@ const Dashboard = () => {
               {/* Gráfico de productos más vendidos */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Ranking Productos Vendidos</CardTitle>
+                  <CardTitle>{t.soldProductsRanking}</CardTitle>
                 </CardHeader>
                 <CardContent style={{ height: 320 }}>
                   {stats.topProducts.length === 0 ? (
                     <div className="text-center text-muted-foreground py-12">
-                      No hay datos de productos vendidos.
+                      {t.noSoldProducts}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full">
@@ -481,12 +542,12 @@ const Dashboard = () => {
               {/* Gráfico de proveedores activos */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Proveedores Activos</CardTitle>
+                  <CardTitle>{t.activeSuppliersChart}</CardTitle>
                 </CardHeader>
                 <CardContent style={{ height: 320 }}>
                   {suppliersList.length === 0 ? (
                     <div className="text-center text-muted-foreground py-12">
-                      No hay datos de proveedores.
+                      {t.noSuppliers}
                     </div>
                   ) : (
                     <VictoryPie
@@ -509,12 +570,12 @@ const Dashboard = () => {
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle>Ventas Últimos 7 Días</CardTitle>
+                  <CardTitle>{t.last7DaysSales}</CardTitle>
                 </CardHeader>
                 <CardContent style={{ height: 320 }}>
                   {salesData.length === 0 ? (
                     <div className="text-center text-muted-foreground py-12">
-                      No hay datos de ventas.
+                      {t.noSales}
                     </div>
                   ) : (
                     <VictoryChart
@@ -537,7 +598,7 @@ const Dashboard = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Estado del Inventario</CardTitle>
+                  <CardTitle>{t.inventoryStatus}</CardTitle>
                 </CardHeader>
                 <CardContent style={{ height: 320 }}>
                   {stockData.length === 0 ? (
@@ -556,7 +617,7 @@ const Dashboard = () => {
                         style={{ parent: { margin: "0 auto" } }}
                       />
                       <div className="w-full text-center mt-4 mb-2 text-sm text-muted-foreground font-semibold">
-                        Colores: Estado del inventario
+                        {t.inventoryColors}
                       </div>
                       <div className="flex flex-wrap gap-2 justify-center mb-2">
                         {stockData.map((cat) => (
