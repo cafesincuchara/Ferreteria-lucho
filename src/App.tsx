@@ -20,113 +20,116 @@ import Inventory from "./pages/Inventory";
 import UploadDocuments from "./pages/UploadDocuments";
 import CustomReports from "./pages/CustomReports";
 import React from "react";
+import { LanguageProvider } from "./context/LanguageContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute allowedRoles={["gerente"]}>
-                  <Users />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/products"
-              element={
-                <ProtectedRoute allowedRoles={["gerente", "bodeguero"]}>
-                  <Products />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/sales"
-              element={
-                <ProtectedRoute allowedRoles={["gerente", "cajero"]}>
-                  <Sales />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/accounting"
-              element={
-                <ProtectedRoute allowedRoles={["gerente", "contador"]}>
-                  <Accounting />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/alerts"
-              element={
-                <ProtectedRoute allowedRoles={["gerente", "bodeguero"]}>
-                  <Alerts />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/logs"
-              element={
-                <ProtectedRoute allowedRoles={["gerente"]}>
-                  <Logs />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/suppliers"
-              element={
-                <ProtectedRoute allowedRoles={["gerente", "bodeguero"]}>
-                  <Suppliers />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inventory"
-              element={
-                <ProtectedRoute allowedRoles={["gerente", "bodeguero"]}>
-                  <Inventory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/upload-documents"
-              element={
-                <ProtectedRoute allowedRoles={["gerente", "contador"]}>
-                  <UploadDocuments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/custom-reports"
-              element={
-                <ProtectedRoute allowedRoles={["gerente", "contador"]}>
-                  <CustomReports />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <LanguageProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/users"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente"]}>
+                    <Users />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/products"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente", "bodeguero"]}>
+                    <Products />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/sales"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente", "cajero"]}>
+                    <Sales />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/accounting"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente", "contador"]}>
+                    <Accounting />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/alerts"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente", "bodeguero"]}>
+                    <Alerts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/logs"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente"]}>
+                    <Logs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/suppliers"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente", "bodeguero"]}>
+                    <Suppliers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inventory"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente", "bodeguero"]}>
+                    <Inventory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/upload-documents"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente", "contador"]}>
+                    <UploadDocuments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/custom-reports"
+                element={
+                  <ProtectedRoute allowedRoles={["gerente", "contador"]}>
+                    <CustomReports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 

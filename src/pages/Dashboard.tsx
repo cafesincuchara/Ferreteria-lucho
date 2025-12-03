@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import ErrorScreen from "@/components/ErrorScreen";
 import NoConnectionScreen from "@/components/NoConnectionScreen";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { LanguageContext } from "@/context/LanguageContext";
 
 import { Package, ShoppingCart, DollarSign, Users } from "lucide-react";
 
@@ -25,6 +26,7 @@ const translations = {
 
 const Dashboard = () => {
   const { userRole } = useAuth();
+  const { language, setLanguage } = useContext(LanguageContext);
 
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -50,7 +52,6 @@ const Dashboard = () => {
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [language, setLanguage] = useState("es");
 
   useEffect(() => {
     loadDashboardData();
@@ -257,7 +258,11 @@ const Dashboard = () => {
 
         <div className="flex justify-end">
           <button
-            onClick={() => setLanguage(language === "es" ? "en" : "es")}
+            onClick={() => {
+              const newLanguage = language === "es" ? "en" : "es";
+              console.log("Cambiando idioma a:", newLanguage);
+              setLanguage(newLanguage);
+            }}
             className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
           >
             {language === "es" ? "Switch to English" : "Cambiar a Español"}
