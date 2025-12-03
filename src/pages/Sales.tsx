@@ -29,6 +29,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Trash2, Edit, Plus } from "lucide-react";
+import { exportToExcel, exportToPDF } from "@/utils/exportReports";
+
+declare global {
+  interface Window {
+    confirmDeleteSale: () => Promise<void>;
+  }
+}
 
 const documentTypes = ["Boleta", "Factura", "Otro"];
 
@@ -269,6 +276,14 @@ const Sales = () => {
     return match;
   });
 
+  const handleExportExcel = () => {
+    exportToExcel(sales, "Reporte_Ventas");
+  };
+
+  const handleExportPDF = () => {
+    exportToPDF(sales, "Reporte_Ventas");
+  };
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -473,6 +488,10 @@ const Sales = () => {
               </form>
             </DialogContent>
           </Dialog>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleExportExcel}>Exportar a Excel</Button>
+          <Button onClick={handleExportPDF}>Exportar a PDF</Button>
         </div>
         <Card>
           <CardHeader>

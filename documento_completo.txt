@@ -1,0 +1,253 @@
+[INFORME COMPLETO EN TEXTO PLANO]
+
+Implementación EPA – Subdirección de Diseño Instruccional
+
+DOCUMENTO ER
+Sistema de gestión contable para empresa de ferretería
+
+Integrantes: Ignacio Catalán, Vicente Herrera, Nicolás Irarrázabal
+
+Contenido
+
+Ficha del documento 1. Introducción
+1.1 Propósito
+2. Descripción General
+2.1 Perspectiva del Producto
+2.2 Funciones del Producto
+2.3 Características de los Usuarios
+3. Requisitos del Proyecto
+3.1 Árbol de funciones
+3.2 Requisitos funcionales y no funcionales
+3.3 Diagrama de flujo de datos
+4. Organización del Proyecto
+4.1 Product Backlog Refinado
+4.2 Sprint Planning
+5. Pantallas del Prototipo Funcional
+5.1 Pantallas del Prototipo
+6. Diagrama UML
+
+  -----------------
+  1. Introducción
+  -----------------
+
+1.1. Propósito del documento
+
+El presente documento ER tiene como propósito administrar y organizar
+las diferentes funcionalidades del sistema, permitiendo registrar de
+manera estructurada sus principales componentes, tales como el contexto,
+el propósito, la visión del producto, los requisitos y las relaciones
+entre las entidades que lo conforman. Esto facilita la planificación, el
+desarrollo y la comprensión del sistema, asegurando que la información
+se gestione de manera coherente y eficiente.
+
+El documento está dirigido principalmente al equipo de desarrollo y a
+los analistas de sistemas, quienes lo utilizarán como guía técnica
+durante la construcción del sistema. Asimismo, podrá ser revisado por
+supervisores o usuarios clave para evaluar la correcta representación
+del modelo y comprender la estructura de la información que maneja el
+sistema.
+
+  ------------------------
+  2. Descripción General
+  ------------------------
+
+Sistema de gestión contable para empresa bancaria
+
+La ferretería “Ferretería Don Lucho” es un negocio de tamaño mediano,
+con varios años de funcionamiento. Su dueño, Don Lucho, ha manejado la
+contabilidad de manera tradicional.
+
+• Guarda boletas en carpetas físicas
+• Registra ventas y compras en cuadernos
+• Usa hojas de cálculo básicas
+
+Con el tiempo, el volumen de transacciones aumentó y ahora el sistema
+manual ya no da abasto:
+
+• A veces olvida registrar compras
+• Pierde tiempo buscando facturas
+• No tiene control claro del inventario
+• El cierre contable mensual es lento y propenso a errores
+
+Don Lucho quiere modernizarse:
+
+• Obtener reportes claros de ventas, ganancias y deudas
+• Digitalizar boletas y facturas
+• Facilitar la administración si delega a otra persona
+
+  ------------------------------
+  2.1 Perspectiva del Producto
+  ------------------------------
+
+El sistema busca modernizar la administración financiera reemplazando
+procesos manuales por una herramienta digital confiable y segura.
+
+Permitirá:
+
+• Registrar ventas, compras y pagos
+• Generar reportes automáticos
+• Controlar inventario con precisión
+• Acceder rápidamente a documentos históricos
+• Reducir errores humanos y tiempos de cierre contable
+
+  ----------------------------
+  2.2 Funciones del Producto
+  ----------------------------
+
+El software incluirá:
+
+• Gestión de compras
+• Gestión de proveedores
+• Control de inventario
+• Registro de ingresos y egresos
+• Reportes financieros
+• Control de usuarios y permisos
+• Respaldo de información
+
+  -------------------------------------
+  2.3 Características de los Usuarios
+  -------------------------------------
+
+Usuarios del sistema:
+
+1.  Dueño
+    • Nivel universitario
+    • Acceso total a módulos
+
+2.  Usuario / Empleado
+    • Nivel medio/técnico
+    • Registra ventas, facturas y boletas
+
+3.  Contador
+    • Nivel técnico profesional o universitario
+    • Manejo financiero e informes
+
+4.  Bodeguero
+    • Nivel técnico
+    • Registra entradas/salidas de producto, genera alertas y reportes
+
+  ----------------------------
+  3. Requisitos del Proyecto
+  ----------------------------
+
+3.1 Árbol de funciones
+
+1.  Sistema de gestión contable
+2.  Actores externos
+    • Dueño
+    • Contador
+    • Usuario
+    • Bodeguero
+
+Flujos:
+
+Dueño ↔ Sistema
+• Crear/editar usuarios
+• Contacto con proveedores
+• Revisar stock
+• Añadir/borrar productos
+
+Usuario ↔ Sistema
+• Registrar facturas/boletas
+
+Contador ↔ Sistema
+• Consultar ventas
+• Ver deudas a pagar
+
+Bodeguero ↔ Sistema
+• Registrar entrada/salida de productos
+• Alertas de stock
+• Exportar reportes
+
+  ---------------------------------------------
+  3.2 Requisitos Funcionales y No Funcionales
+  ---------------------------------------------
+
+(Se listan sin imágenes)
+
+  --------------------------------
+  3.3 Diagrama de flujo de datos
+  --------------------------------
+
+(No incluido por ser imagen)
+
+  ------------------------------
+  4. Organización del Proyecto
+  ------------------------------
+
+4.1 Product Backlog Refinado
+
+US-01 Registro de usuario
+US-02 Inicio de sesión
+US-03 Recuperar contraseña
+US-04 Crear usuario con permisos
+US-07 Agregar producto
+US-09 Registrar boletas y facturas
+US-10 Actualizar inventario
+US-17 Alerta de stock bajo
+US-11 Registrar ingresos
+US-12 Registrar egresos
+US-13 Generar informes de ventas
+US-19 Registro automático de acciones
+US-20 Respaldo automático/manual
+
+  ---------------------
+  4.2 Sprint Planning
+  ---------------------
+
+(No incluido por ser tabla en imagen)
+
+  --------------------------------------
+  5. Pantallas del Prototipo Funcional
+  --------------------------------------
+
+Accesos por tipo de usuario:
+
+Administrador:
+• Login
+• Dashboard
+• Gestión de usuarios
+• Gestión de productos
+• Inventario
+• Ventas
+• Contabilidad
+• Proveedores
+• Historial
+• Alertas
+
+Bodeguero:
+• Login
+• Dashboard
+• Gestión de productos
+• Inventario
+• Proveedores
+• Alertas
+
+Cajero:
+• Login
+• Dashboard
+• Ventas
+
+Contador:
+• Login
+• Dashboard
+• Contabilidad
+
+Funciones de pantallas:
+
+Login: acceso a la plataforma
+Dashboard: vista general
+Gestión de usuarios: CRUD de usuarios
+Gestión de productos: CRUD productos
+Inventario: listado y reporte
+Ventas: reportes y registro
+Contabilidad: ingresos/egresos/balance
+Proveedores: CRUD proveedores
+Historial: registro de acciones
+Alertas: mensajes automáticos del sistema
+
+  -----------------
+  6. Diagrama UML
+  -----------------
+
+(No incluido por ser imagen)

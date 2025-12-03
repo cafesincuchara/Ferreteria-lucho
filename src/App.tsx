@@ -17,6 +17,8 @@ import Alerts from "./pages/Alerts";
 import Logs from "./pages/Logs";
 import Suppliers from "./pages/Suppliers";
 import Inventory from "./pages/Inventory";
+import UploadDocuments from "./pages/UploadDocuments";
+import CustomReports from "./pages/CustomReports";
 import React from "react";
 
 const queryClient = new QueryClient();
@@ -101,6 +103,22 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["gerente", "bodeguero"]}>
                   <Inventory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/upload-documents"
+              element={
+                <ProtectedRoute allowedRoles={["gerente", "contador"]}>
+                  <UploadDocuments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/custom-reports"
+              element={
+                <ProtectedRoute allowedRoles={["gerente", "contador"]}>
+                  <CustomReports />
                 </ProtectedRoute>
               }
             />
