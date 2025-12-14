@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, Edit, Package } from "lucide-react";
+import { Plus, Trash2, Edit, Package, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { logAction } from "@/lib/logger";
 import { z } from "zod";
@@ -45,7 +46,10 @@ const productSchema = z.object({
 });
 
 const Products = () => {
+  const { userRole } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -69,6 +73,23 @@ const Products = () => {
     loadProducts();
     loadSuppliers();
   }, []);
+
+  useEffect(() => {
+    // Filtrar productos cuando cambia el término de búsqueda
+    if (searchTerm.trim() === "") {
+      setFilteredProducts(products);
+    } else {
+      const term = searchTerm.toLowerCase();
+      const filtered = products.filter(
+        (product) =>
+          product.name.toLowerCase().includes(term) ||
+          (product.sku && product.sku.toLowerCase().includes(term)) ||
+          (product.description &&
+            product.description.toLowerCase().includes(term))
+      );
+      setFilteredProducts(filtered);
+    }
+  }, [searchTerm, products]);
 
   const loadProducts = async () => {
     const { data } = await supabase
@@ -138,30 +159,36 @@ const Products = () => {
     }
   };
 
-  const handleDelete = async (productId: string) => {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const handleDelete = (productId: string) => {
     setConfirmMsg({
       id: productId,
       msg: "¿Estás seguro de eliminar este producto?",
     });
-    window.confirmDeleteProduct = async () => {
-      setConfirmMsg(null);
-      try {
-        const { error } = await supabase
-          .from("products")
-          .delete()
-          .eq("id", productId);
-        if (error) throw error;
-        await logAction("Eliminar producto", "product", productId);
-        setAlertMsg("Producto eliminado correctamente");
-        loadProducts();
-      } catch (error: any) {
-        if (error?.message?.includes("Failed to fetch")) {
-          setAlertMsg("Sin conexión a internet. Intenta nuevamente.");
-        } else {
-          setAlertMsg(error.message || "Error al eliminar");
-        }
+    setPendingDeleteId(productId);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!pendingDeleteId) return;
+    setConfirmMsg(null);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", pendingDeleteId);
+      if (error) throw error;
+      await logAction("Eliminar producto", "product", pendingDeleteId);
+      setAlertMsg("Producto eliminado correctamente");
+      loadProducts();
+    } catch (error: any) {
+      if (error?.message?.includes("Failed to fetch")) {
+        setAlertMsg("Sin conexión a internet. Intenta nuevamente.");
+      } else {
+        setAlertMsg(error.message || "Error al eliminar");
       }
-    };
+    }
+    setPendingDeleteId(null);
   };
 
   const handleEdit = (product: any) => {
@@ -211,7 +238,7 @@ const Products = () => {
               <Button
                 size="sm"
                 variant="destructive"
-                onClick={() => window.confirmDeleteProduct()}
+                onClick={confirmDeleteProduct}
               >
                 Eliminar
               </Button>
@@ -371,6 +398,19 @@ const Products = () => {
         <Card>
           <CardHeader>
             <CardTitle>Lista de Productos</CardTitle>
+            {(userRole === "admin" || userRole === "bodeguero") && (
+              <div className="mt-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nombre, SKU o descripción..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <Table>
@@ -385,55 +425,129 @@ const Products = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium">{product.name}</div>
-                          {product.description && (
-                            <div className="text-xs text-muted-foreground">
-                              {product.description}
+                {userRole === "admin" || userRole === "bodeguero" ? (
+                  filteredProducts.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center text-muted-foreground py-8"
+                      >
+                        {searchTerm
+                          ? "No se encontraron productos que coincidan con la búsqueda"
+                          : "No hay productos registrados"}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredProducts.map((product) => (
+                      <TableRow key={product.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium">{product.name}</div>
+                              {product.description && (
+                                <div className="text-xs text-muted-foreground">
+                                  {product.description}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{product.sku || "-"}</TableCell>
-                    <TableCell>
-                      ${Number(product.price).toLocaleString("es-CL")}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          product.stock <= product.min_stock
-                            ? "destructive"
-                            : "secondary"
-                        }
-                      >
-                        {product.stock} unidades
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{product.suppliers?.name || "-"}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(product)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(product.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>{product.sku || "-"}</TableCell>
+                        <TableCell>
+                          ${Number(product.price).toLocaleString("es-CL")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              product.stock <= product.min_stock
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
+                            {product.stock} unidades
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{product.suppliers?.name || "-"}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(product)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )
+                ) : products.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center text-muted-foreground py-8"
+                    >
+                      No hay productos registrados
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  products.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">{product.name}</div>
+                            {product.description && (
+                              <div className="text-xs text-muted-foreground">
+                                {product.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{product.sku || "-"}</TableCell>
+                      <TableCell>
+                        ${Number(product.price).toLocaleString("es-CL")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            product.stock <= product.min_stock
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
+                          {product.stock} unidades
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{product.suppliers?.name || "-"}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(product)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(product.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
